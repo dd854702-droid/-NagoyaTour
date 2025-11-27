@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>名古屋筆記 2026</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* ================== 風格定義 ================== */
+        :root {
+            --paper-color: #fcfcfc;
+            --ink-color: #1a1a1a;
+            --accent-gold: #f59e0b; 
+            --accent-miso: #9f1239; 
+            --shadow-offset: 3px;
+        }
+
+        body {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            background-color: #f0f0f0;
+            background-image: 
+                linear-gradient(#e5e5e5 1px, transparent 1px),
+                linear-gradient(90deg, #e5e5e5 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: var(--ink-color);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .app-shell {
+            max-width: 480px;
+            margin: 0 auto;
+            background: var(--paper-color);
+            min-height: 100vh;
+            border-left: 2px solid #1a1a1a;
+            border-right: 2px solid #1a1a1a;
+            position: relative;
+            padding-bottom: 90px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 卡片風格 */
+        .sketch-card {
+            background: white;
+            border: 2px solid var(--ink-color);
+            border-radius: 12px;
+            box-shadow: var(--shadow-offset) var(--shadow-offset) 0px 0px var(--ink-color);
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .sketch-card:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0px 0px var(--ink-color);
+        }
+
+        .sketch-box {
+            background: white;
+            border: 2px solid var(--ink-color);
+            border-radius: 12px;
+            box-shadow: var(--shadow-offset) var(--shadow-offset) 0px 0px rgba(0,0,0,0.1);
+        }
+
+        /* 交通資訊標籤 */
+        .travel-tag {
+            font-size: 0.65rem;
+            background: #fff;
+            border: 1px solid var(--ink-color);
+            padding: 2px 8px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 1px 1px 0 rgba(0,0,0,0.1);
+            color: #666;
+            margin-left: 1rem;
+            position: relative;
+            z-index: 5;
+        }
+
+        /* 導覽列 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 476px;
+            background: white;
+            border-top: 2px solid var(--ink-color);
+            display: flex;
+            justify-content: space-around;
+            padding: 12px 0 24px;
+            z-index: 50;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #9ca3af;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+        .nav-item.active {
+            color: var(--ink-color);
+            transform: scale(1.1);
+        }
+
+        /* 頁面切換 */
+        .page-content { display: none; animation: fadeIn 0.3s ease-out; }
+        .page-content.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 時間軸線 */
+        .sketch-timeline {
+            position: absolute;
+            left: 28px;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: repeating-linear-gradient(to bottom, var(--ink-color), var(--ink-color) 4px, transparent 4px, transparent 10px);
+            z-index: 0;
+        }
+
+        .sketch-input {
+            border: 2px solid var(--ink-color);
+            border-radius: 8px;
+            outline: none;
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        /* Map Styles */
+        .map-container {
+            position: relative;
+            width: 100%;
+            height: 400px; /* Reduced height for per-day maps */
+            background-color: #fffbeb; 
+            background-image: radial-gradient(#d6d3d1 1px, transparent 1px);
+            background-size: 20px 20px;
+            border: 2px solid var(--ink-color);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        
+        /* 手繪線條動畫 */
+        .path-line {
+            stroke-dasharray: 12, 8; 
+            stroke-dashoffset: 1000;
+            animation: drawLine 4s forwards ease-in-out;
+            stroke-linecap: round; 
+            stroke-linejoin: round;
+        }
+        
+        @keyframes drawLine {
+            to { stroke-dashoffset: 0; }
+        }
+        
+        .station-label {
+            text-shadow: 2px 2px 0 #fffbeb, -1px -1px 0 #fffbeb;
+        }
+
+        /* 隱藏滾動條 */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+    </style>
+</head>
+<body>
+
+    <svg width="0" height="0" style="position:absolute">
+        <defs>
+            <marker id="arrow-pink" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L6,3 L0,6" fill="none" stroke="#ec4899" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </marker>
+            <marker id="arrow-green" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L6,3 L0,6" fill="none" stroke="#4ade80" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </marker>
+            <marker id="arrow-blue" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L6,3 L0,6" fill="none" stroke="#38bdf8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </marker>
+            <filter id="dropShadow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur in="SourceAlpha" stdDeviation="1"/>
+                <feOffset dx="1" dy="1" result="offsetblur"/>
+                <feComponentTransfer><feFuncA type="linear" slope="0.3"/></feComponentTransfer>
+                <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+        </defs>
+    </svg>
+
+    <div class="app-shell">
+        
+        <div id="page-home" class="page-content active p-6">
+            <div class="flex justify-between items-start mb-6 mt-4 border-b-2 border-dashed border-gray-300 pb-4">
+                <div>
+                    <h1 class="text-3xl font-black tracking-tight flex items-center gap-2">
+                        <span>名古屋</span>
+                        <span class="text-xs bg-black text-white px-2 py-1 rounded rotate-3 inline-block">GO!</span>
+                    </h1>
+                    <p class="text-sm font-bold mt-1 pl-1">2026.03.02 - 03.06</p>
+                </div>
+                <div class="w-12 h-12 border-2 border-black rounded-full flex items-center justify-center bg-yellow-400 shadow-[2px_2px_0_0_#000]">
+                    <i class="fas fa-child-reaching text-xl"></i>
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <h2 class="font-bold text-lg mb-3 flex items-center gap-2"><i class="fas fa-cloud-sun"></i> <span>天氣預報</span></h2>
+                <div class="flex overflow-x-auto space-x-3 pb-2">
+                    <div class="flex-shrink-0 sketch-box w-20 p-2 flex flex-col items-center bg-blue-50">
+                        <span class="text-xs font-black">Mon</span><span class="text-[10px] mb-1">3/02</span>
+                        <i class="fas fa-plane-arrival text-xl mb-1"></i><span class="font-bold">14°</span>
+                    </div>
+                    <div class="flex-shrink-0 sketch-box w-20 p-2 flex flex-col items-center bg-yellow-50 transform -rotate-2 border-yellow-400">
+                        <span class="text-xs font-black text-red-600">Tue</span><span class="text-[10px] mb-1">3/03</span>
+                        <i class="fas fa-sun text-xl mb-1 text-orange-500"></i><span class="font-bold">16°</span>
+                    </div>
+                    <div class="flex-shrink-0 sketch-box w-20 p-2 flex flex-col items-center bg-white">
+                        <span class="text-xs font-black">Wed</span><span class="text-[10px] mb-1">3/04</span>
+                        <i class="fas fa-cloud text-xl mb-1 text-gray-400"></i><span class="font-bold">17°</span>
+                    </div>
+                    <div class="flex-shrink-0 sketch-box w-20 p-2 flex flex-col items-center bg-white">
+                        <span class="text-xs font-black">Thu</span><span class="text-[10px] mb-1">3/05</span>
+                        <i class="fas fa-cloud-sun text-xl mb-1 text-gray-500"></i><span class="font-bold">15°</span>
+                    </div>
+                    <div class="flex-shrink-0 sketch-box w-20 p-2 flex flex-col items-center bg-blue-50">
+                        <span class="text-xs font-black">Fri</span><span class="text-[10px] mb-1">3/06</span>
+                        <i class="fas fa-plane-departure text-xl mb-1"></i><span class="font-bold">15°</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sketch-box p-4 mb-8 bg-white relative">
+                <div class="absolute -top-3 left-4 bg-black text-white text-xs px-2 py-1 font-bold transform -rotate-2">RATE: 0.215</div>
+                <div class="flex items-center gap-2 mt-2">
+                    <div class="flex-1"><label class="block text-xs font-bold mb-1 ml-1">🇯🇵 JPY</label><input type="number" id="input-jpy" class="sketch-input w-full p-2 text-lg font-bold bg-gray-50" placeholder="¥"></div>
+                    <i class="fas fa-exchange-alt text-gray-400 mt-5"></i>
+                    <div class="flex-1"><label class="block text-xs font-bold mb-1 ml-1">🇹🇼 TWD</label><input type="number" id="input-twd" class="sketch-input w-full p-2 text-lg font-bold bg-gray-50" placeholder="$"></div>
+                </div>
+                <div id="exchange-rate-display" class="text-right text-[10px] text-gray-400 mt-2 font-mono">1 TWD ≈ 4.65 JPY</div>
+            </div>
+
+            <h2 class="font-bold text-lg mb-4 flex items-center gap-2"><i class="fas fa-list-ul"></i><span>行程總覽</span></h2>
+            <div class="space-y-4">
+                <div class="sketch-box p-3 bg-gray-100 border-dashed">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 flex items-center justify-center text-xl"><i class="fas fa-plane-arrival"></i></div>
+                        <div>
+                            <h3 class="font-bold">3/02 (一) 抵達</h3>
+                            <p class="text-xs text-gray-500">NGO 20:25 抵達 • 宿 Trip & Sleep</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div onclick="switchPage('page-day1')" class="sketch-card p-4 flex items-center gap-4 cursor-pointer bg-orange-50">
+                    <div class="w-10 h-10 flex flex-col items-center justify-center border-2 border-black rounded-full bg-white"><span class="font-black text-sm">D1</span></div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-lg">市區美食巡禮</h3>
+                        <p class="text-xs font-bold text-gray-500 mt-1">3/03 Tue • 炸蝦/大須/鰻魚飯</p>
+                    </div>
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+
+                <div onclick="switchPage('page-day2')" class="sketch-card p-4 flex items-center gap-4 cursor-pointer bg-pink-50">
+                    <div class="w-10 h-10 flex flex-col items-center justify-center border-2 border-black rounded-full bg-white"><span class="font-black text-sm">D2</span></div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-lg">犬山城古都遊</h3>
+                        <p class="text-xs font-bold text-gray-500 mt-1">3/04 Wed • 國寶城/咖啡名店</p>
+                    </div>
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+
+                <div onclick="switchPage('page-day3')" class="sketch-card p-4 flex items-center gap-4 cursor-pointer bg-yellow-50">
+                    <div class="w-10 h-10 flex flex-col items-center justify-center border-2 border-black rounded-full bg-white"><span class="font-black text-sm">D3</span></div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-lg">名城與購物</h3>
+                        <p class="text-xs font-bold text-gray-500 mt-1">3/05 Thu • 金鯱/榮商圈</p>
+                    </div>
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+
+                 <div class="sketch-box p-3 bg-gray-100 border-dashed">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 flex items-center justify-center text-xl"><i class="fas fa-plane-departure"></i></div>
+                        <div>
+                            <h3 class="font-bold">3/06 (五) 返程</h3>
+                            <p class="text-xs text-gray-500">NGO 13:15 起飛</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="page-day1" class="page-content min-h-full">
+            <div class="sticky top-0 bg-white/95 border-b-2 border-black p-4 z-40 flex items-center justify-between">
+                <div><h2 class="font-black text-2xl">Day 01</h2><p class="text-xs font-bold bg-orange-100 inline-block px-1">3/03 Tue • 市區</p></div>
+                <div class="text-3xl">🍤</div>
+            </div>
+            
+            <div class="p-6 relative pb-20">
+                <div class="sketch-timeline"></div>
+                <div class="relative flex">
+                    <div class="w-14 flex flex-col items-center z-10">
+                        <div class="bg-white border-2 border-black w-8 h-8 rounded-full flex items-center justify-center mb-1"><i class="fas fa-person-walking"></i></div>
+                        <span class="text-xs font-black bg-white px-1">08:00</span>
+                    </div>
+                    <div class="flex-1 pl-2"><div class="sketch-box p-3 bg-white"><h3 class="font-bold">Trip & Sleep Hostel</h3><p class="text-xs text-gray-500">出發！</p></div></div>
+                </div>
+                <div class="my-4 pl-14"><div class="travel-tag"><i class="fas fa-train"></i> 地鐵名城線 | 10分 | ¥210</div></div>
+
+                <div class="relative flex">
+                    <div class="w-14 flex flex-col items-center z-10">
+                        <div class="bg-orange-100 border-2 border-black w-8 h-8 rounded-full flex items-center justify-center mb-1"><i class="fas fa-mug-hot"></i></div>
+                        <span class="text-xs font-black bg-white px-1">08:15</span>
+                    </div>
+                    <div class="flex-1 pl-2"><div class="sketch-card p-4 relative overflow-hidden"><h3 class="font-bold text-lg">Konparu (榮)</h3><p class="text-sm">🍤 炸蝦三明治</p></div></div>
+                </div>
+                <div class="my-4 pl-14"><div class="travel-tag"><i class="fas fa-person-walking"></i> 步行或地鐵 | 15分 | ¥210</div></div>
+
+                <div class="relative flex">
+                    <div class="w-14 flex flex-col items-center z-10">
+                        <div class="bg-white border-2 border-black w-8 h-8 rounded-full flex items-center justify-center mb-1"><i class="fas fa-fish"></i></div>
+                        <span class="text-xs font-black bg-white px-1">08:45</span>
+                    </div>
+                    <div class="flex-1 pl-2"><div class="sketch-box p-3 bg-blue-50 border-dashed"><h3 class="font-bold">柳橋中央市場</h3><p class="text-xs mt-1">生魚片早餐</p></div></div>
+                </div>
+                <div class="my-4 pl-14"><div class="travel-tag"><i class="fas fa-person-walking"></i> 步行 | 10分 | ¥0</div></div>
+
+                <div class="relative flex">
+                    <div class="w-14 flex flex-col items-center z-10">
+                        <div class="bg-yellow-100 border-2 border-black w-8 h-8 rounded-full flex items-center justify-center mb-1"><i class="fas fa-utensils"></i></div>
+                        <span class="text-xs font-black bg-white px-1">12:00</span>
+                    </div>
+                    <div class="flex-1 pl-2"><div class="sketch-card p-4"><h3 class="font-bold">鳥開総本家</h3><p class="font-black text-yellow-600 mt-1">🥚 金賞親子丼</p><p class="text-xs text-gray-500">Lucent Tower店</p></div></div>
+                </div>
+                <div class="my-4 pl-14"><div class="travel-tag"><i class="fas fa-train"></i> 地鐵東山線 | 15分 | ¥240</div></div>
+
+                <div class="relative flex">
+                    <div class="w-14 flex flex-col items-center z-10">
+                        <div class="bg-red-100 border-2 border-black w-8 h-8 rounded-full flex items-center justify-center mb-1"><i class="fas fa-bag-shopping"></i></div>
+                        <span class="text-xs font-black bg-white px-1">13:30</span>
+                    </div>
+                    <div class="flex-1 pl-2"><div class="sketch-card p-4 bg-red-50"><h3 class="font-bold text-lg">大須商店街</h3><p class="text-xs mt-1">Kannon Coffee / 愛麗絲 / 古著</p></div></div>
+                </div>
+                <div class="my-4 pl-14"><div class="travel-tag"><i class="fas fa-person-walking"></i> 步行或地鐵 | 15分 | ¥210</div></div>
+
+                <div class="relative flex mb-8">
+                    <div class="w-14 flex flex-col items-center z-10">
+                        <div class="bg-black text-white border-2 border-black w-8 h-8 rounded-full flex items-center justify-center mb-1"><i class="fas fa-bowl-rice"></i></div>
+                        <span class="text-xs font-black bg-white px-1">17:00</span>
+                    </div>
+                    <div class="flex-1 pl-2"><div class="sketch-card p-4 bg-white border-4 border-double"><h3 class="font-bold text-xl">熱田蓬萊軒</h3><p class="text-xs font-bold text-gray-400">松阪屋店</p><div class="mt-2 bg-black text-white p-2 rounded text-center transform -rotate-1"><span class="text-lg">🍱 鰻魚飯三吃</span></div></div></div>
+                </div>
+
+                <div class="map-container relative">
+                    <h4 class="absolute top-2 left-3 font-bold text-xs bg-white px-2 py-1 border border-black rounded z-10">Day 1 Route</h4>
+                    <svg viewBox="0 0 350 400" class="w-full h-full">
+                        <path d="M 120 0 Q 110 200 130 400" fill="none" stroke="#e0f2fe" stroke-width="20" stroke-linecap="round" />
+                        <line x1="0" y1="200" x2="350" y2="200" stroke="#e5e5e5" stroke-width="12" /> <line x1="230" y1="0" x2="230" y2="400" stroke="#e5e5e5" stroke-width="12" /> <path d="M 60 0 L 60 400" fill="none" stroke="#777" stroke-width="2" stroke-dasharray="4,4" />
+
+                        <path d="M 210 210 Q 250 150 240 80" fill="none" stroke="#38bdf8" stroke-width="4" stroke-dasharray="10,5" stroke-linecap="round" class="path-line" marker-end="url(#arrow-blue)" />
+                        <path d="M 240 80 Q 150 50 60 80" fill="none" stroke="#38bdf8" stroke-width="4" stroke-dasharray="10,5" stroke-linecap="round" class="path-line" marker-end="url(#arrow-blue)" />
+                        <path d="M 60 80 Q 80 150 120 200" fill="none" stroke="#38bdf8" stroke-width="4" stroke-dasharray="10,5" stroke-linecap="round" class="path-line" marker-end="url(#arrow-blue)" />
+                        <path d="M 120 200 Q 150 300 180 350" fill="none" stroke="#38bdf8" stroke-width="4" stroke-dasharray="10,5" stroke-linecap="round" class="path-line" marker-end="url(#arrow-blue)" />
+                        <path d="M 180 350 Q 220 300 210 210" fill="none" stroke="#38bdf8" stroke-width="4" stroke-dasharray="10,5" stroke-linecap="round" class="path-line" marker-end="url(#arrow-blue)" />
+
+                        <text x="40" y="70" font-size="28" filter="url(#dropShadow)">🚉</text>
+                        <text x="60" y="95" text-anchor="middle" font-size="10" font-weight="bold" class="station-label">名古屋站</text>
+                        
+                        <text x="220" y="70" font-size="28" filter="url(#dropShadow)">🚉</text>
+                        <text x="240" y="95" text-anchor="middle" font-size="10" font-weight="bold" class="station-label">榮站</text>
+
+                        <text x="160" y="190" font-size="28" filter="url(#dropShadow)">🚉</text>
+                        <text x="180" y="215" text-anchor="middle" font-size="10" font-weight="bold" class="station-label">上前津站</text>
+
+                        <path d="M 190 200 Q 205 205 210 215" fill="none" stroke="black" stroke-width="1.5" stroke-dasharray="3,2" />
+                        <g transform="translate(210, 210)">
+                            <path d="M 0 15 L 15 0 L 30 15" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M 5 15 L 5 30 L 25 30 L 25 15" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M 12 30 L 12 20 L 18 20 L 18 30" fill="none" stroke="#1a1a1a" stroke-width="2" />
+                            <text x="15" y="45" text-anchor="middle" font-size="9" font-weight="bold" fill="#22c55e" class="station-label">住宿</text>
+                        </g>
+
+                        <circle cx="240" cy="80" r="8" fill="#38bdf8" stroke="white" stroke-width="2" transform="translate(0,20)"/> <text x="240" y="104" text-anchor="middle" font-size="10" font-weight="bold" fill="white">1</text>
+                        <circle cx="60" cy="80" r="8" fill="#38bdf8" stroke="white" stroke-width="2" transform="translate(0,-15)"/> <text x="60" y="69" text-anchor="middle" font-size="10" font-weight="bold" fill="white">2</text>
+                        <circle cx="120" cy="200" r="8" fill="#38bdf8" stroke="white" stroke-width="2"/> <text x="120" y="204" text-anchor="middle" font-size="10" font-weight="bold" fill="white">3</text>
+                        <circle cx="180" cy="350" r="8" fill="#38bdf8" stroke="white" stroke-width="2"/> <text x="180" y="354" text-anchor="middle" font-size="10" font-weight="bold" fill="white">4</text>
+
+                        <text x="250" y="70" font-size="9" font-weight="bold" fill="#38bdf8" class="station-label">炸蝦三明治</text>
+                        <text x="115" y="180" text-anchor="middle" font-size="20" filter="url(#dropShadow)">⛩️</text>
+                        <text x="95" y="180" text-anchor="middle" font-size="10" font-weight="bold" class="station-label">大須</text>
+                        <text x="160" y="350" font-size="24" filter="url(#dropShadow)">🍱</text>
+                        <text x="210" y="345" font-size="10" font-weight="bold" class="station-label">熱田神宮</text>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div id="page-day2" class="page-content min-h-full">
+            <div class="sticky top-0 bg-white/95 border-b-2 border-black p-4 z-40 flex items-center justify-between">
+                <div><h2 class="font-black text-2xl">Day 02</h2><p class="text-xs font-bold bg-pink-100 inline-block px-1">3/04 Wed • 犬山</p></div>
+                <div class="text-3xl">🌸</div>
+            </div>
+
+            <div class="p-6 relative pb-20">
+                <div class="sketch-timeline"></div>
+                <div class="relative flex">
+                    <div class="w-14 flex flex-col items-center z-10">
+                        <div class="bg-white border-2 border-black w-8 h-8 rounded-full flex items-center justify-center mb-1"><i class="fas fa-bread-slice"></i></div>
+                        <span class="text-xs font-black bg-white px-1">08:00</span>
+                    </div>
+                    <div class="flex-1 pl-2"><div class="sketch-box p-3 bg-white"><h3 class="font-bold">Bucyo Coffee</h3><p class="text-sm">🍞 小倉紅豆吐司</p></div></div>
+                </div>
+                <div class="my-4 pl-14"><div class="travel-tag"><i class="fas fa-person-walking"></i> 往名古屋站 | 10分</div></div>
+
+                <div class="relative flex">
+                    <div class="w-14 flex flex-col items-center z-10">
+                        <div class="bg-red-500 text-white border-2 border-black w-8 h-8 rounded-full flex items-center justify-center mb-1"><i class="fas fa-train"></i></div>
+                        <span class="text-xs font-black bg-white px-1">09:15</span>
+                    </div>
+                    <div class="flex-1 pl-2 flex items-center"><div class="bg-white border-2 border-black px-4 py-2 rounded-full text-xs font-bold transform -rotate-2">名鐵犬山線 🚃</div></div>
+                </div>
+                <div class="my-4 pl-14"><div class="travel-tag"><i class="fas fa-train"></i> 名鐵急行 | 30分 | ¥570</div></div>
+
+                <div class="relative flex">
+                    <div class="w-14 flex flex-col items-center z-10">
+                        <div class="bg-pink-100 border-2 border-black w-8 h-8 rounded-full flex items-center justify-center mb-1"><i class="fas fa-chess-rook"></i></div>
+                        <span class="text-xs font-black bg-white px-1">10:30</span>
+                    </div>
+                    <div class="flex-1 pl-2"><div class="sketch-card p-0 overflow-hidden"><div class="bg-sky-100 h-24 flex items-center justify-center text-5xl relative">🏯</div><div class="p-3"><h3 class="font-bold text-lg">國寶 犬山城</h3><p class="text-xs text-gray-500">日本最古老天守閣</p></div></div></div>
+                </div>
+                <div class="my-4 pl-14"><div class="travel-tag"><i class="fas fa-person-walking"></i> 步行 | 10分</div></div>
+
+                <div class="relative flex">
+                    <div class="w-14 flex flex-col items-center z-10">
+                        <div class="bg-white border-2 border-black w-8 h-8 rounded-full flex items-center justify-center mb-1"><i class="fas fa-utensils"></i></div>
+                        <span class="text-xs font-black bg-white px-1">12:30</span>
+                    </div>
+                    <div class="flex-1 pl-2"><div class="sketch-box p-3 bg-white"><h3 class="font-bold">Sakura Chaya</h3><p class="text-sm font-bold mt-1">🍡 田樂烤豆腐串</p></div></div>
+                </div>
+
+                <div class="relative flex">
+                    <div class="w-14 flex flex-col items-center z-10">
+                        <div class="bg-white border-2 border-black w-8 h-8 rounded-full flex items-center justify-center mb-1"><i class="fas fa-camera"></i></div>
+                        <span class="text-xs font-black bg-white px-1">14:00</span>
+                    </div>
+                    <div class="flex-1 pl-2"><div class="sketch-card p-4 bg-pink-50"><h3 class="font-bold mb-2">城下町散策</h3><p class="text-xs">戀愛神社 ❤️ / 飛驒牛壽司 🍣</p></div></div>
+                </div>
+                <div class="my-4 pl-14"><div class="travel-tag bg-yellow-50 border-yellow-600 text-yellow-800"><i class="fas fa-exchange-alt"></i> 名鐵+地鐵鶴舞線 | 75分 | ¥840</div></div>
+
+                <div class="relative flex">
+                    <div class="w-14 flex flex-col items-center z-10">
+                        <div class="bg-amber-800 text-white border-2 border-black w-8 h-8 rounded-full flex items-center justify-center mb-1"><i class="fas fa-coffee"></i></div>
+                        <span class="text-xs font-black bg-white px-1">16:30</span>
+                    </div>
+                    <div class="flex-1 pl-2"><div class="sketch-box p-3 bg-amber-50 border-dashed"><h3 class="font-bold">GOLPIE COFFEE</h3><p class="text-xs text-amber-900">📍 川名山 (昭和區)</p></div></div>
+                </div>
+                <div class="my-4 pl-14"><div class="travel-tag"><i class="fas fa-train"></i> 地鐵鶴舞線 | 20分 | ¥240</div></div>
+
+                <div class="relative flex mb-8">
+                    <div class="w-14 flex flex-col items-center z-10">
+                        <div class="bg-black text-white border-2 border-black w-8 h-8 rounded-full flex items-center justify-center mb-1"><i class="fas fa-drumstick-bite"></i></div>
+                        <span class="text-xs font-black bg-white px-1">19:00</span>
+                    </div>
+                    <div class="flex-1 pl-2"><div class="sketch-card p-4 bg-gray-800 text-white"><div class="flex justify-between items-start"><h3 class="font-bold text-yellow-400 text-lg">世界的山將</h3><i class="fas fa-beer text-xl"></i></div><div class="mt-2 flex items-center gap-2 text-sm"><span>🍗 夢幻手羽先</span></div></div></div>
+                </div>
+
+                <div class="map-container relative">
+                    <h4 class="absolute top-2 left-3 font-bold text-xs bg-white px-2 py-1 border border-black rounded z-10">Day 2 Route</h4>
+                    <svg viewBox="0 0 350 400" class="w-full h-full">
+                        <path d="M 120 0 Q 110 200 130 400" fill="none" stroke="#e0f2fe" stroke-width="20" stroke-linecap="round" />
+                        <path d="M 60 0 L 60 400" fill="none" stroke="#777" stroke-width="2" stroke-dasharray="4,4" />
+
+                        <path d="M 210 350 Q 160 320 60 250" fill="none" stroke="#ec4899" stroke-width="3" stroke-dasharray="8,5" class="path-line" marker-end="url(#arrow-pink)" />
+                        <path d="M 60 250 Q 60 150 180 50" fill="none" stroke="#ec4899" stroke-width="3" stroke-dasharray="8,5" class="path-line" marker-end="url(#arrow-pink)" />
+                        <path d="M 180 50 Q 300 200 280 300" fill="none" stroke="#ec4899" stroke-width="3" stroke-dasharray="8,5" class="path-line" marker-end="url(#arrow-pink)" />
+                        <path d="M 280 300 Q 250 340 210 350" fill="none" stroke="#ec4899" stroke-width="3" stroke-dasharray="8,5" class="path-line" marker-end="url(#arrow-pink)" />
+
+                        <text x="160" y="50" font-size="24" filter="url(#dropShadow)">🏯</text>
+                        <text x="205" y="50" font-size="12" font-weight="bold" class="station-label">犬山城</text>
+                        <text x="205" y="64" font-size="9" fill="#666" class="station-label">城下町</text>
+
+                        <text x="40" y="230" font-size="28" filter="url(#dropShadow)">🚉</text>
+                        <text x="60" y="255" text-anchor="middle" font-size="10" font-weight="bold" class="station-label">名古屋站</text>
+
+                        <text x="270" y="280" font-size="18" filter="url(#dropShadow)">☕</text>
+                        <text x="300" y="300" text-anchor="middle" font-size="10" font-weight="bold" class="station-label">川名山</text>
+                        <text x="300" y="312" text-anchor="middle" font-size="9" fill="#666" class="station-label">Golpie</text>
+
+                        <text x="160" y="330" font-size="28" filter="url(#dropShadow)">🚉</text>
+                        <text x="180" y="355" text-anchor="middle" font-size="10" font-weight="bold" class="station-label">上前津站</text>
+                        <path d="M 190 340 Q 205 345 210 355" fill="none" stroke="black" stroke-width="1.5" stroke-dasharray="3,2" />
+                        <g transform="translate(210, 350)">
+                            <path d="M 0 15 L 15 0 L 30 15" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M 5 15 L 5 30 L 25 30 L 25 15" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M 12 30 L 12 20 L 18 20 L 18 30" fill="none" stroke="#1a1a1a" stroke-width="2" />
+                            <text x="15" y="45" text-anchor="middle" font-size="9" font-weight="bold" fill="#22c55e" class="station-label">住宿</text>
+                        </g>
+                        
+                        <text x="50" y="380" font-size="18">🌲</text>
+                        <text x="280" y="100" font-size="18">🌲</text>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div id="page-day3" class="page-content min-h-full">
+            <div class="sticky top-0 bg-white/95 border-b-2 border-black p-4 z-40 flex items-center justify-between">
+                <div><h2 class="font-black text-2xl">Day 03</h2><p class="text-xs font-bold bg-yellow-100 inline-block px-1">3/05 Thu • 名城</p></div>
+                <div class="text-3xl">🐋</div>
+            </div>
+
+            <div class="p-6 relative pb-20">
+                <div class="sketch-timeline"></div>
+                <div class="relative flex">
+                    <div class="w-14 flex flex-col items-center z-10">
+                        <div class="bg-gray-700 text-white border-2 border-black w-8 h-8 rounded-full flex items-center justify-center mb-1"><i class="fas fa-coffee"></i></div>
+                        <span class="text-xs font-black bg-white px-1">08:00</span>
+                    </div>
+                    <div class="flex-1 pl-2"><div class="sketch-box p-3 bg-white"><h3 class="font-bold">Karasu (カラス)</h3><p class="text-sm mt-1 font-bold">☕️ 黑咖啡 +吐司水煮蛋</p></div></div>
+                </div>
+                <div class="my-4 pl-14"><div class="travel-tag"><i class="fas fa-train"></i> 地鐵東山線 | 10分 | ¥210</div></div>
+
+                <div class="relative flex">
+                    <div class="w-14 flex flex-col items-center z-10">
+                        <div class="bg-yellow-400 border-2 border-black w-8 h-8 rounded-full flex items-center justify-center mb-1"><i class="fas fa-landmark"></i></div>
+                        <span class="text-xs font-black bg-white px-1">09:00</span>
+                    </div>
+                    <div class="flex-1 pl-2"><div class="sketch-card p-4 bg-black text-white text-center"><div class="flex justify-center gap-4 text-3xl mb-2"><span>🐋</span><span>🏯</span><span>🐋</span></div><h3 class="font-bold text-xl text-yellow-400">名古屋城</h3></div></div>
+                </div>
+                <div class="my-4 pl-14"><div class="travel-tag"><i class="fas fa-bus"></i> 觀光巴士 | 20分 | ¥210</div></div>
+
+                <div class="relative flex">
+                    <div class="w-14 flex flex-col items-center z-10">
+                        <div class="bg-green-100 border-2 border-black w-8 h-8 rounded-full flex items-center justify-center mb-1"><i class="fas fa-tree"></i></div>
+                        <span class="text-xs font-black bg-white px-1">11:30</span>
+                    </div>
+                    <div class="flex-1 pl-2"><div class="sketch-box p-3 bg-green-50 border-dashed"><h3 class="font-bold text-green-900">德川園</h3><p class="text-xs text-green-800">日式庭園</p></div></div>
+                </div>
+                <div class="my-4 pl-14"><div class="travel-tag"><i class="fas fa-bus"></i> 巴士/地鐵 | 30分 | ¥240</div></div>
+
+                <div class="relative flex">
+                    <div class="w-14 flex flex-col items-center z-10">
+                        <div class="bg-white border-2 border-black w-8 h-8 rounded-full flex items-center justify-center mb-1"><i class="fas fa-utensils"></i></div>
+                        <span class="text-xs font-black bg-white px-1">13:30</span>
+                    </div>
+                    <div class="flex-1 pl-2"><div class="sketch-card p-4"><h3 class="font-bold">Yellow (則武新町)</h3><p class="text-sm font-bold mt-1">🍛 濃厚歐姆蛋包飯</p></div></div>
+                </div>
+                <div class="my-4 pl-14"><div class="travel-tag"><i class="fas fa-train"></i> 地鐵東山線 | 15分 | ¥210</div></div>
+
+                <div class="relative flex">
+                    <div class="w-14 flex flex-col items-center z-10">
+                        <div class="bg-purple-100 border-2 border-black w-8 h-8 rounded-full flex items-center justify-center mb-1"><i class="fas fa-tags"></i></div>
+                        <span class="text-xs font-black bg-white px-1">15:00</span>
+                    </div>
+                    <div class="flex-1 pl-2"><div class="sketch-card p-4 bg-purple-50"><h3 class="font-bold text-purple-900">榮 (Sakae) 商圈</h3><p class="text-xs font-bold mt-1">LACHIC | 中日大樓</p></div></div>
+                </div>
+                <div class="my-4 pl-14"><div class="travel-tag"><i class="fas fa-train"></i> 地鐵 | 10分 | ¥210</div></div>
+
+                <div class="relative flex mb-8">
+                    <div class="w-14 flex flex-col items-center z-10">
+                        <div class="bg-orange-500 text-white border-2 border-black w-8 h-8 rounded-full flex items-center justify-center mb-1"><i class="fas fa-shrimp"></i></div>
+                        <span class="text-xs font-black bg-white px-1">18:00</span>
+                    </div>
+                    <div class="flex-1 pl-2"><div class="sketch-card p-4"><h3 class="font-bold">海老どて食堂</h3><span class="text-[10px] font-bold block mt-1 bg-orange-100 w-fit px-1">35cm 特大炸蝦</span></div></div>
+                </div>
+
+                <div class="map-container relative">
+                    <h4 class="absolute top-2 left-3 font-bold text-xs bg-white px-2 py-1 border border-black rounded z-10">Day 3 Route</h4>
+                    <svg viewBox="0 0 350 400" class="w-full h-full">
+                        <path d="M 120 0 Q 110 200 130 400" fill="none" stroke="#e0f2fe" stroke-width="20" stroke-linecap="round" />
+                        <line x1="0" y1="200" x2="350" y2="200" stroke="#e5e5e5" stroke-width="12" />
+                        <line x1="230" y1="0" x2="230" y2="400" stroke="#e5e5e5" stroke-width="12" />
+
+                        <path d="M 210 350 Q 200 250 120 100" fill="none" stroke="#4ade80" stroke-width="4" stroke-dasharray="6,8" stroke-linecap="round" class="path-line" marker-end="url(#arrow-green)" />
+                        <path d="M 120 100 Q 200 80 280 120" fill="none" stroke="#4ade80" stroke-width="4" stroke-dasharray="6,8" stroke-linecap="round" class="path-line" marker-end="url(#arrow-green)" /> 
+                        <path d="M 280 120 Q 280 180 230 220" fill="none" stroke="#4ade80" stroke-width="4" stroke-dasharray="6,8" stroke-linecap="round" class="path-line" marker-end="url(#arrow-green)" /> 
+                        <path d="M 230 220 Q 240 300 210 350" fill="none" stroke="#4ade80" stroke-width="4" stroke-dasharray="6,8" stroke-linecap="round" class="path-line" marker-end="url(#arrow-green)" /> 
+
+                        <text x="120" y="90" font-size="24" filter="url(#dropShadow)">🐋</text>
+                        <text x="110" y="80" font-size="10" font-weight="bold" class="station-label">名古屋城</text>
+                        <circle cx="120" cy="100" r="8" fill="#4ade80" stroke="white" stroke-width="2"/> <text x="120" y="104" text-anchor="middle" font-size="10" font-weight="bold" fill="white">1</text>
+
+                        <text x="280" y="110" text-anchor="middle" font-size="10" font-weight="bold" class="station-label">德川園</text>
+                        <circle cx="280" cy="120" r="8" fill="#4ade80" stroke="white" stroke-width="2"/> <text x="280" y="124" text-anchor="middle" font-size="10" font-weight="bold" fill="white">2</text>
+
+                        <text x="210" y="200" font-size="28" filter="url(#dropShadow)">🚉</text>
+                        <text x="230" y="225" text-anchor="middle" font-size="10" font-weight="bold" class="station-label">榮站</text>
+                        <circle cx="230" cy="220" r="8" fill="#4ade80" stroke="white" stroke-width="2" transform="translate(15,-10)"/> <text x="245" y="214" text-anchor="middle" font-size="10" font-weight="bold" fill="white">3</text>
+
+                        <text x="160" y="330" font-size="28" filter="url(#dropShadow)">🚉</text>
+                        <text x="180" y="355" text-anchor="middle" font-size="10" font-weight="bold" class="station-label">上前津站</text>
+                        <path d="M 190 340 Q 205 345 210 355" fill="none" stroke="black" stroke-width="1.5" stroke-dasharray="3,2" />
+                        <g transform="translate(210, 350)">
+                            <path d="M 0 15 L 15 0 L 30 15" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M 5 15 L 5 30 L 25 30 L 25 15" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M 12 30 L 12 20 L 18 20 L 18 30" fill="none" stroke="#1a1a1a" stroke-width="2" />
+                            <text x="15" y="45" text-anchor="middle" font-size="9" font-weight="bold" fill="#22c55e" class="station-label">住宿</text>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <nav class="bottom-nav">
+            <button onclick="switchPage('page-home')" id="nav-home" class="nav-item active"><i class="fas fa-home text-xl mb-1"></i><span class="text-[10px]">Home</span></button>
+            <button onclick="switchPage('page-day1')" id="nav-day1" class="nav-item"><i class="fas fa-child text-xl mb-1"></i><span class="text-[10px] text-center leading-none">Day 1<br>3/03</span></button>
+            <button onclick="switchPage('page-day2')" id="nav-day2" class="nav-item"><i class="fas fa-child-reaching text-xl mb-1"></i><span class="text-[10px] text-center leading-none">Day 2<br>3/04</span></button>
+            <button onclick="switchPage('page-day3')" id="nav-day3" class="nav-item"><i class="fas fa-person-walking-luggage text-xl mb-1"></i><span class="text-[10px] text-center leading-none">Day 3<br>3/05</span></button>
+        </nav>
+
+    </div>
+
+    <script>
+        function switchPage(pageId) {
+            document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
+            const target = document.getElementById(pageId);
+            if (target) { target.classList.add('active'); window.scrollTo(0,0); }
+            
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            const navMap = { 'page-home': 'nav-home', 'page-day1': 'nav-day1', 'page-day2': 'nav-day2', 'page-day3': 'nav-day3' };
+            if (navMap[pageId]) document.getElementById(navMap[pageId]).classList.add('active');
+        }
+
+        // Currency
+        const jpyInput = document.getElementById('input-jpy');
+        const twdInput = document.getElementById('input-twd');
+        const rateDisplay = document.getElementById('exchange-rate-display');
+        let exchangeRate = 0.215; 
+
+        async function fetchRate() {
+            try {
+                const response = await fetch('https://api.exchangerate-api.com/v4/latest/JPY');
+                const data = await response.json();
+                if(data?.rates?.TWD) {
+                    exchangeRate = data.rates.TWD;
+                    rateDisplay.textContent = `1 TWD ≈ ${(1/exchangeRate).toFixed(2)} JPY`;
+                    if(jpyInput.value) jpyInput.dispatchEvent(new Event('input'));
+                }
+            } catch (e) { console.log('Using default rate'); }
+        }
+
+        jpyInput.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            twdInput.value = !isNaN(val) ? (val * exchangeRate).toFixed(0) : '';
+        });
+
+        twdInput.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            jpyInput.value = !isNaN(val) ? (val / exchangeRate).toFixed(0) : '';
+        });
+
+        fetchRate();
+    </script>
+</body>
+</html>
