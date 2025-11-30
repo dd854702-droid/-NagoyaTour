@@ -213,9 +213,27 @@
             to { transform: rotate(25deg); }
         }
 
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 200;
+            display: none; justify-content: center; align-items: center;
+            backdrop-filter: blur(3px);
+        }
+        .modal-content {
+            background: white; width: 90%; max-width: 400px;
+            border: 2px solid var(--ink-color); border-radius: 15px;
+            box-shadow: 4px 4px 0 var(--ink-color);
+            padding: 20px; position: relative;
+            animation: popUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
         /* Utilities */
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .btn-icon-small { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 50%; cursor: pointer; }
+        .btn-icon-small:hover { background-color: #f3f4f6; }
     </style>
 </head>
 <body>
@@ -287,6 +305,18 @@
                 </div>
             </div>
 
+            <!-- Transit Links -->
+            <div class="flex gap-3 mb-6">
+                <a href="https://transit.yahoo.co.jp/" target="_blank" class="flex-1 sketch-card p-2 flex items-center justify-center gap-2 hover:bg-gray-50">
+                    <i class="fas fa-train text-green-600"></i>
+                    <span class="text-xs font-bold">Yahoo! 乘換</span>
+                </a>
+                <a href="https://www.google.com/maps" target="_blank" class="flex-1 sketch-card p-2 flex items-center justify-center gap-2 hover:bg-gray-50">
+                    <i class="fas fa-map-marked-alt text-blue-600"></i>
+                    <span class="text-xs font-bold">Google Maps</span>
+                </a>
+            </div>
+
             <!-- Accommodation -->
             <div class="sketch-card p-3 mb-6 flex items-center gap-3">
                 <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center border border-black">
@@ -303,9 +333,18 @@
 
             <!-- Day Tabs -->
             <div class="flex gap-2 overflow-x-auto hide-scrollbar mb-4">
-                <button onclick="switchDay('day1')" class="day-tab active bg-white border-2 border-black px-4 py-2 rounded-lg font-bold text-sm whitespace-nowrap shadow-[2px_2px_0_0_#000]">Day 1 (3/03)</button>
-                <button onclick="switchDay('day2')" class="day-tab bg-gray-100 border-2 border-transparent px-4 py-2 rounded-lg font-bold text-sm whitespace-nowrap text-gray-500">Day 2 (3/04)</button>
-                <button onclick="switchDay('day3')" class="day-tab bg-gray-100 border-2 border-transparent px-4 py-2 rounded-lg font-bold text-sm whitespace-nowrap text-gray-500">Day 3 (3/05)</button>
+                <button id="tab-day1" onclick="switchDay('day1')" class="day-tab active bg-white border-2 border-black px-4 py-2 rounded-lg font-bold text-sm whitespace-nowrap shadow-[2px_2px_0_0_#000] flex flex-col items-center justify-center leading-tight min-w-[100px]">
+                    <span class="text-base">Day 1</span>
+                    <span class="text-xs font-normal mt-0.5">03/03(二)</span>
+                </button>
+                <button id="tab-day2" onclick="switchDay('day2')" class="day-tab bg-gray-100 border-2 border-transparent px-4 py-2 rounded-lg font-bold text-sm whitespace-nowrap text-gray-500 flex flex-col items-center justify-center leading-tight min-w-[100px]">
+                    <span class="text-base">Day 2</span>
+                    <span class="text-xs font-normal mt-0.5">03/04(三)</span>
+                </button>
+                <button id="tab-day3" onclick="switchDay('day3')" class="day-tab bg-gray-100 border-2 border-transparent px-4 py-2 rounded-lg font-bold text-sm whitespace-nowrap text-gray-500 flex flex-col items-center justify-center leading-tight min-w-[100px]">
+                    <span class="text-base">Day 3</span>
+                    <span class="text-xs font-normal mt-0.5">03/05(四)</span>
+                </button>
             </div>
 
             <!-- Day Content Container -->
@@ -372,7 +411,22 @@
         <div id="page-wallet" class="page-content">
             <h2 class="text-2xl font-black mb-4">記帳 & 匯率 Wallet</h2>
 
-            <!-- Currency Converter / Calculator -->
+            <!-- Budget Control -->
+            <div class="sketch-box p-3 bg-gray-100 mb-4 border-dashed">
+                <div class="flex justify-between items-center mb-2">
+                    <div class="text-xs font-bold text-gray-500">總預算設定 (TWD)</div>
+                    <input type="number" id="budget-input" class="bg-transparent border-b border-gray-400 text-right w-24 font-mono text-sm focus:outline-none" placeholder="設定金額" onchange="updateBudget()">
+                </div>
+                <div class="h-2 bg-gray-300 rounded-full overflow-hidden">
+                    <div id="budget-bar" class="h-full bg-green-500 w-0 transition-all duration-500"></div>
+                </div>
+                <div class="flex justify-between mt-1">
+                    <span class="text-[10px] text-gray-400">已支出: $<span id="budget-spent">0</span></span>
+                    <span class="text-[10px] text-gray-400">剩餘: $<span id="budget-left">0</span></span>
+                </div>
+            </div>
+
+            <!-- Currency Converter -->
             <div class="sketch-card p-4 bg-gray-800 text-white mb-6">
                 <h3 class="text-xs font-bold text-gray-400 mb-2 uppercase">Quick Converter (Jpy → Twd)</h3>
                 <div class="flex items-center gap-2 mb-2">
@@ -434,12 +488,18 @@
                         <input type="number" id="expense-amount" placeholder="金額" class="sketch-input flex-1 p-2 font-mono">
                     </div>
 
-                    <!-- Photo Upload -->
-                    <label class="flex items-center justify-center gap-2 border-2 border-dashed border-gray-300 rounded-lg p-2 cursor-pointer hover:bg-gray-50 transition">
-                        <i class="fas fa-camera text-gray-400"></i>
-                        <span class="text-sm text-gray-500" id="photo-label">上傳照片 (選填)</span>
-                        <input type="file" id="expense-photo" accept="image/*" class="hidden" onchange="handlePhotoUpload(this)">
-                    </label>
+                    <!-- Photo Upload & Shared Checkbox (Added back) -->
+                    <div class="flex gap-2">
+                        <label class="flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-gray-300 rounded-lg p-2 cursor-pointer hover:bg-gray-50 transition">
+                            <i class="fas fa-camera text-gray-400"></i>
+                            <span class="text-sm text-gray-500" id="photo-label">上傳照片</span>
+                            <input type="file" id="expense-photo" accept="image/*" class="hidden" onchange="handlePhotoUpload(this)">
+                        </label>
+                        <label class="flex-1 flex items-center justify-center gap-2 border-2 border-gray-300 rounded-lg p-2 cursor-pointer bg-gray-50 has-[:checked]:bg-green-50 has-[:checked]:border-green-500 transition">
+                            <input type="checkbox" id="expense-shared" class="accent-green-500">
+                            <span class="text-xs font-bold text-gray-600">公費 (Shared)</span>
+                        </label>
+                    </div>
                     <input type="hidden" id="expense-photo-base64">
 
                     <button onclick="addExpense()" class="w-full bg-black text-white font-bold py-2 rounded-lg hover:bg-gray-800 transition shadow-[2px_2px_0_0_#ccc]">
@@ -508,23 +568,50 @@
                 </div>
             </div>
 
+            <!-- Size Chart -->
+            <button onclick="toggleModal('modal-size')" class="w-full sketch-card p-3 mb-6 flex items-center justify-between hover:bg-gray-50">
+                <span class="font-bold"><i class="fas fa-ruler-combined mr-2 text-purple-500"></i>尺碼對照表</span>
+                <i class="fas fa-chevron-right text-gray-400"></i>
+            </button>
+
+            <!-- Data Backup -->
+            <div class="sketch-card p-4 mb-6 bg-gray-50">
+                <h3 class="font-bold mb-3 text-sm text-gray-700"><i class="fas fa-database mr-2"></i>資料備份</h3>
+                <div class="flex gap-2">
+                    <button onclick="exportData()" class="flex-1 bg-white border border-black rounded p-2 text-xs font-bold hover:bg-gray-100">匯出 (複製代碼)</button>
+                    <button onclick="importData()" class="flex-1 bg-black text-white border border-black rounded p-2 text-xs font-bold hover:bg-gray-800">匯入 (貼上代碼)</button>
+                </div>
+            </div>
+            
             <!-- Emergency -->
-            <div class="grid grid-cols-2 gap-4 mb-6">
-                <a href="tel:110" class="sketch-box p-3 text-center bg-red-50 hover:bg-red-100">
-                    <i class="fas fa-user-shield text-2xl text-red-500 mb-1"></i>
-                    <div class="font-bold">警察 110</div>
-                </a>
-                <a href="tel:119" class="sketch-box p-3 text-center bg-red-50 hover:bg-red-100">
-                    <i class="fas fa-ambulance text-2xl text-red-500 mb-1"></i>
-                    <div class="font-bold">救護 119</div>
-                </a>
+            <div class="sketch-card p-4 mb-6 bg-red-50 border-2 border-red-100">
+                <h3 class="font-bold mb-3 text-red-600 border-b border-red-200 pb-1"><i class="fas fa-ambulance mr-2"></i>緊急聯絡</h3>
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <a href="tel:110" class="bg-white p-3 rounded-lg border border-red-100 shadow-sm flex flex-col items-center justify-center hover:bg-red-50 transition"><i class="fas fa-user-shield text-xl text-blue-800 mb-1"></i><span class="text-xs font-bold text-gray-600">警察 (110)</span></a>
+                    <a href="tel:119" class="bg-white p-3 rounded-lg border border-red-100 shadow-sm flex flex-col items-center justify-center hover:bg-red-50 transition"><i class="fas fa-ambulance text-xl text-red-500 mb-1"></i><span class="text-xs font-bold text-gray-600">救護 (119)</span></a>
+                </div>
+                <div class="bg-white p-3 rounded-lg border border-red-100 shadow-sm mb-4">
+                    <h4 class="font-bold text-sm mb-2 text-gray-700">🇹🇼 駐大阪辦事處</h4>
+                    <p class="text-xs text-gray-500 mb-2">急難救助 (名古屋管轄)</p>
+                    <a href="tel:+81-90-8794-4568" class="flex items-center gap-2 text-red-600 font-bold text-sm"><i class="fas fa-phone-alt"></i> +81-90-8794-4568</a>
+                </div>
+                <div class="border-t border-dashed border-red-200 pt-3">
+                    <h4 class="font-bold text-sm mb-2 text-gray-700">最近的求救地點</h4>
+                    <button onclick="findNearestHelp()" id="btn-find-help" class="w-full bg-red-500 text-white font-bold py-2 rounded-lg hover:bg-red-600 transition flex items-center justify-center gap-2 shadow text-sm"><i class="fas fa-location-arrow"></i> 定位並搜尋</button>
+                    <div id="help-result" class="hidden mt-3 bg-white p-3 rounded-lg border border-gray-200">
+                        <div class="flex items-start gap-3">
+                            <div class="text-2xl text-red-500"><i class="fas fa-map-marker-alt"></i></div>
+                            <div class="flex-1"><div id="help-name" class="font-bold text-sm text-gray-800">搜尋中...</div><div id="help-dist" class="text-xs text-gray-500 mt-1"></div><a id="help-link" href="#" target="_blank" class="hidden mt-2 inline-block text-[10px] bg-gray-100 px-2 py-1 rounded text-blue-600 font-bold">開啟 Google Maps 導航</a></div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Tips -->
             <div class="sketch-card p-4 bg-white">
                 <h3 class="font-bold mb-2 text-red-500"><i class="fas fa-exclamation-triangle mr-2"></i>注意事項</h3>
                 
-                <!-- Clothing Recommendation (Added) -->
+                <!-- Clothing Recommendation -->
                 <div class="mb-4 pb-3 border-b border-dashed border-gray-200">
                     <h4 class="font-bold text-sm mb-1 text-gray-800"><i class="fas fa-tshirt mr-1"></i>當日建議穿著 (3月初)</h4>
                     <p class="text-xs text-gray-600 leading-relaxed">
@@ -545,45 +632,32 @@
             </div>
         </div>
 
-        <!-- BOTTOM NAVIGATION -->
+        <!-- MODALS -->
+        <div id="modal-size" class="modal-overlay" onclick="if(event.target===this) toggleModal('modal-size')">
+            <div class="modal-content">
+                <h3 class="font-bold text-lg mb-4 border-b-2 border-black pb-2">尺碼對照表 (JP)</h3>
+                <div class="space-y-4 text-sm">
+                    <div><h4 class="font-bold bg-gray-100 p-1 mb-1">👟 鞋碼 (女)</h4><div class="grid grid-cols-3 gap-2 text-center"><div class="border p-1">JP</div><div class="border p-1">US</div><div class="border p-1">EU</div><div>23</div><div>6</div><div>36</div><div>23.5</div><div>6.5</div><div>37</div><div>24</div><div>7</div><div>38</div><div>24.5</div><div>7.5</div><div>39</div></div></div>
+                    <div><h4 class="font-bold bg-gray-100 p-1 mb-1">👟 鞋碼 (男)</h4><div class="grid grid-cols-3 gap-2 text-center"><div class="border p-1">JP</div><div class="border p-1">US</div><div class="border p-1">EU</div><div>26</div><div>8</div><div>41</div><div>27</div><div>9</div><div>42.5</div><div>28</div><div>10</div><div>44</div></div></div>
+                </div>
+                <button onclick="toggleModal('modal-size')" class="mt-4 w-full bg-black text-white p-2 rounded font-bold">關閉</button>
+            </div>
+        </div>
+
+        <!-- BOTTOM NAV -->
         <nav class="bottom-nav">
-            <button onclick="switchPage('page-plan')" id="nav-plan" class="nav-item active">
-                <i class="fas fa-map-marked-alt"></i>
-                <span class="mt-1">PLAN</span>
-            </button>
-            <button onclick="switchPage('page-guide')" id="nav-guide" class="nav-item">
-                <i class="fas fa-book-open"></i>
-                <span class="mt-1">GUIDE</span>
-            </button>
-            <button onclick="switchPage('page-wallet')" id="nav-wallet" class="nav-item">
-                <i class="fas fa-wallet"></i>
-                <span class="mt-1">WALLET</span>
-            </button>
-            <button onclick="switchPage('page-lists')" id="nav-lists" class="nav-item">
-                <i class="fas fa-list-check"></i>
-                <span class="mt-1">LISTS</span>
-            </button>
-            <button onclick="switchPage('page-info')" id="nav-info" class="nav-item">
-                <i class="fas fa-info-circle"></i>
-                <span class="mt-1">INFO</span>
-            </button>
+            <button onclick="switchPage('page-plan')" id="nav-plan" class="nav-item active"><i class="fas fa-map-marked-alt"></i><span class="mt-1">PLAN</span></button>
+            <button onclick="switchPage('page-guide')" id="nav-guide" class="nav-item"><i class="fas fa-book-open"></i><span class="mt-1">GUIDE</span></button>
+            <button onclick="switchPage('page-wallet')" id="nav-wallet" class="nav-item"><i class="fas fa-wallet"></i><span class="mt-1">WALLET</span></button>
+            <button onclick="switchPage('page-lists')" id="nav-lists" class="nav-item"><i class="fas fa-list-check"></i><span class="mt-1">LISTS</span></button>
+            <button onclick="switchPage('page-info')" id="nav-info" class="nav-item"><i class="fas fa-info-circle"></i><span class="mt-1">INFO</span></button>
         </nav>
 
     </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // ================= STATE & CONFIG =================
-        let exchangeRate = 0.215; // JPY to TWD (Will fetch)
-        
-        // Initial Data
-        const defaultChecklist = [
-            { text: "護照", checked: false },
-            { text: "網卡 / Roaming", checked: false },
-            { text: "日幣現金", checked: false },
-            { text: "行動電源", checked: false }
-        ];
-
+        // ================= DATA & STATE =================
+        let exchangeRate = 0.215;
         const expenseCategories = [
             { id: 'food', name: '飲食', icon: 'fa-utensils', color: 'bg-orange-50', chartColor: '#fdba74' },
             { id: 'shopping', name: '購物', icon: 'fa-shopping-bag', color: 'bg-pink-50', chartColor: '#f9a8d4' },
@@ -591,58 +665,38 @@
             { id: 'accommodation', name: '住宿', icon: 'fa-bed', color: 'bg-purple-50', chartColor: '#d8b4fe' },
             { id: 'other', name: '其他', icon: 'fa-ellipsis-h', color: 'bg-gray-100', chartColor: '#d1d5db' }
         ];
+        const defaultChecklist = [
+            { text: "護照", checked: false }, { text: "網卡 / Roaming", checked: false }, { text: "日幣現金", checked: false }, { text: "行動電源", checked: false }
+        ];
+        const emergencySpots = [
+            { name: "愛知縣中警察署", lat: 35.1627, lng: 136.9095, type: "police" },
+            { name: "坂種病院 (急救)", lat: 35.1539, lng: 136.8920, type: "hospital" }
+        ];
 
-        // ================= COUNTDOWN =================
-        function updateCountdown() {
-            // Target date: March 2, 2026, 16:45:00
-            const targetDate = new Date('2026-03-02T16:45:00').getTime();
-            const now = new Date().getTime();
-            const distance = targetDate - now;
+        // ================= MAIN LOGIC =================
+        window.onload = function() {
+            switchDay('day1');
+            renderExpenses();
+            renderChecklist();
+            parseMemoLinks(document.getElementById('memo-area').value);
+            fetchWeather();
+            updateCountdown();
+            setInterval(updateCountdown, 1000);
+        };
 
-            const timerElement = document.getElementById('countdown-timer');
-            if (!timerElement) return;
-
-            if (distance < 0) {
-                timerElement.innerHTML = "旅程已開始！";
-                return;
-            }
-
-            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-            timerElement.innerHTML = 
-                `${days}天 ${hours}時 ${minutes}分 ${seconds}秒`;
-        }
-
-        // Start countdown immediately and update every second
-        setInterval(updateCountdown, 1000);
-
-        // ================= NAVIGATION =================
         function switchPage(pageId) {
             document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
             window.scrollTo(0,0);
-            
             document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
-            const navId = pageId.replace('page-', 'nav-');
-            document.getElementById(navId).classList.add('active');
-
-            const iconMap = {
-                'page-plan': 'fa-plane',
-                'page-guide': 'fa-book-open',
-                'page-wallet': 'fa-coins',
-                'page-lists': 'fa-list-check',
-                'page-info': 'fa-info'
-            };
+            document.getElementById(pageId.replace('page-', 'nav-')).classList.add('active');
+            const iconMap = { 'page-plan': 'fa-plane', 'page-guide': 'fa-book-open', 'page-wallet': 'fa-coins', 'page-lists': 'fa-list-check', 'page-info': 'fa-info' };
             document.querySelector('#page-title-icon i').className = `fas ${iconMap[pageId]}`;
         }
 
-        // ================= PLAN: DAY SWITCHER =================
         function switchDay(dayId) {
             document.querySelectorAll('.day-tab').forEach(btn => {
-                if(btn.textContent.toLowerCase().includes(dayId.replace('day',''))) {
+                if(btn.id === 'tab-' + dayId) {
                     btn.classList.add('active', 'bg-white', 'border-black', 'shadow-[2px_2px_0_0_#000]', 'text-black');
                     btn.classList.remove('bg-gray-100', 'border-transparent', 'text-gray-500');
                 } else {
@@ -652,119 +706,80 @@
             });
 
             const contentDiv = document.getElementById('day-content');
+            
             let html = '';
-
             if (dayId === 'day1') {
-                html = `
-                    <div id="day1-detail" class="day-detail">
-                        <h3 class="font-black text-xl mb-4 border-l-4 border-blue-400 pl-3">市區美食巡禮</h3>
-                        <div class="relative pl-2">
-                            <div class="timeline-line"></div>
-                            <div class="relative flex items-start mb-6"><div class="bg-white border-2 border-black w-8 h-8 rounded-full flex items-center justify-center z-10 mr-3 flex-shrink-0"><span class="font-bold text-xs">08:00</span></div><div class="sketch-card p-3 flex-1"><h4 class="font-bold">出發！</h4><p class="text-xs text-gray-500">Hostel 集合</p></div></div>
-                            <div class="relative flex items-start mb-6"><div class="bg-orange-100 border-2 border-black w-8 h-8 rounded-full flex items-center justify-center z-10 mr-3 flex-shrink-0"><i class="fas fa-utensils text-xs"></i></div><div class="sketch-card p-3 flex-1"><h4 class="font-bold">Konparu (榮)</h4><p class="text-xs text-gray-500">炸蝦三明治早餐</p></div></div>
-                            <div class="relative flex items-start mb-6"><div class="bg-blue-100 border-2 border-black w-8 h-8 rounded-full flex items-center justify-center z-10 mr-3 flex-shrink-0"><i class="fas fa-fish text-xs"></i></div><div class="sketch-box p-3 bg-blue-50 flex-1 border-dashed"><h4 class="font-bold">柳橋中央市場</h4><p class="text-xs">生魚片、海鮮巡禮</p></div></div>
-                            <div class="relative flex items-start mb-6"><div class="bg-red-100 border-2 border-black w-8 h-8 rounded-full flex items-center justify-center z-10 mr-3 flex-shrink-0"><i class="fas fa-shopping-bag text-xs"></i></div><div class="sketch-card p-3 flex-1"><h4 class="font-bold">大須商店街</h4><p class="text-xs text-gray-500">逛街、下午茶</p></div></div>
-                            <div class="relative flex items-start mb-6"><div class="bg-yellow-100 border-2 border-black w-8 h-8 rounded-full flex items-center justify-center z-10 mr-3 flex-shrink-0"><i class="fas fa-drumstick-bite text-xs"></i></div><div class="sketch-card p-3 flex-1 border-l-4 border-black"><h4 class="font-bold">熱田蓬萊軒 (晚餐)</h4><p class="text-xs text-gray-500">必吃鰻魚飯三吃 Hitsumabushi</p></div></div>
-                        </div>
-                        <div class="map-container">
-                            <h4 class="absolute top-2 left-3 font-bold text-[10px] bg-white px-2 py-1 border border-black rounded z-10">Day 1 Route</h4>
-                            <svg viewBox="0 0 350 400" class="w-full h-full">
-                                <path d="M 120 0 Q 110 200 130 400" fill="none" stroke="#e0f2fe" stroke-width="20" stroke-linecap="round" />
-                                <line x1="0" y1="200" x2="350" y2="200" stroke="#e5e5e5" stroke-width="12" />
-                                <line x1="230" y1="0" x2="230" y2="400" stroke="#e5e5e5" stroke-width="12" />
-                                <path d="M 60 0 L 60 400" fill="none" stroke="#777" stroke-width="2" stroke-dasharray="4,4" />
-                                <path d="M 210 210 Q 250 150 240 80" fill="none" stroke="#38bdf8" stroke-width="4" stroke-dasharray="10,5" stroke-linecap="round" class="path-line" marker-end="url(#arrow-blue)" />
-                                <path d="M 240 80 Q 150 50 60 80" fill="none" stroke="#38bdf8" stroke-width="4" stroke-dasharray="10,5" stroke-linecap="round" class="path-line" marker-end="url(#arrow-blue)" />
-                                <path d="M 60 80 Q 80 150 120 200" fill="none" stroke="#38bdf8" stroke-width="4" stroke-dasharray="10,5" stroke-linecap="round" class="path-line" marker-end="url(#arrow-blue)" />
-                                <path d="M 120 200 Q 150 300 180 350" fill="none" stroke="#38bdf8" stroke-width="4" stroke-dasharray="10,5" stroke-linecap="round" class="path-line" marker-end="url(#arrow-blue)" />
-                                <path d="M 180 350 Q 220 300 210 210" fill="none" stroke="#38bdf8" stroke-width="4" stroke-dasharray="10,5" stroke-linecap="round" class="path-line" marker-end="url(#arrow-blue)" />
-                                <text x="40" y="80" font-size="24" filter="url(#dropShadow)">🚉</text><text x="60" y="95" text-anchor="middle" font-size="10" font-weight="bold" class="station-label">名站</text>
-                                <text x="220" y="80" font-size="24" filter="url(#dropShadow)">🚉</text><text x="240" y="95" text-anchor="middle" font-size="10" font-weight="bold" class="station-label">榮</text>
-                                <text x="100" y="200" font-size="24" filter="url(#dropShadow)">⛩️</text><text x="120" y="220" text-anchor="middle" font-size="10" font-weight="bold" class="station-label">大須</text>
-                                <text x="160" y="350" font-size="24" filter="url(#dropShadow)">🍱</text><text x="180" y="370" text-anchor="middle" font-size="10" font-weight="bold" class="station-label">熱田</text>
-                                <path d="M 190 200 Q 205 205 210 215" fill="none" stroke="black" stroke-width="1.5" stroke-dasharray="3,2" /><g transform="translate(210, 210)"><path d="M 0 15 L 15 0 L 30 15" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" /><path d="M 5 15 L 5 30 L 25 30 L 25 15" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" /><text x="15" y="45" text-anchor="middle" font-size="9" font-weight="bold" fill="#22c55e" class="station-label">住宿</text></g>
-                                <text x="250" y="70" font-size="9" font-weight="bold" fill="#38bdf8" class="station-label">炸蝦三明治</text>
-                                <circle cx="240" cy="80" r="8" fill="#38bdf8" stroke="white" stroke-width="2" transform="translate(0,20)"/> <text x="240" y="104" text-anchor="middle" font-size="10" font-weight="bold" fill="white">1</text>
-                                <circle cx="60" cy="80" r="8" fill="#38bdf8" stroke="white" stroke-width="2" transform="translate(0,-15)"/> <text x="60" y="69" text-anchor="middle" font-size="10" font-weight="bold" fill="white">2</text>
-                                <circle cx="120" cy="200" r="8" fill="#38bdf8" stroke="white" stroke-width="2"/> <text x="120" y="204" text-anchor="middle" font-size="10" font-weight="bold" fill="white">3</text>
-                                <circle cx="180" cy="350" r="8" fill="#38bdf8" stroke="white" stroke-width="2"/> <text x="180" y="354" text-anchor="middle" font-size="10" font-weight="bold" fill="white">4</text>
-                            </svg>
-                        </div>
-                    </div>
-                `;
+                // DAY 1 HTML
+                html = `<div id="day1-detail" class="day-detail"><h3 class="font-black text-xl mb-4 border-l-4 border-blue-400 pl-3">市區美食巡禮</h3><div class="relative pl-2"><div class="timeline-line"></div><div class="relative flex items-start mb-6" id="card-d1-1"><div class="bg-white border-2 border-black w-8 h-8 rounded-full flex items-center justify-center z-10 mr-3 flex-shrink-0"><span class="font-bold text-xs">08:00</span></div><div class="sketch-card p-3 flex-1 relative"><div class="absolute top-2 right-2 text-gray-300 cursor-pointer" onclick="editNote('card-d1-1')"><i class="fas fa-edit"></i></div><h4 class="font-bold">出發！</h4><p class="text-xs text-gray-500">Hostel 集合</p><div class="note-area mt-2 text-xs text-blue-600 font-bold hidden"></div></div></div><div class="relative flex items-start mb-6" id="card-d1-2"><div class="bg-orange-100 border-2 border-black w-8 h-8 rounded-full flex items-center justify-center z-10 mr-3 flex-shrink-0"><i class="fas fa-utensils text-xs"></i></div><div class="sketch-card p-3 flex-1 relative"><div class="absolute top-2 right-2 text-gray-300 cursor-pointer" onclick="editNote('card-d1-2')"><i class="fas fa-edit"></i></div><span class="text-[10px] font-bold bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 mb-1 inline-block"><i class="far fa-clock mr-1"></i>08:15</span><h4 class="font-bold">Konparu (榮)</h4><p class="text-xs text-gray-500">炸蝦三明治早餐</p><a href="https://www.google.com/maps/search/?api=1&query=Konparu+Sakae" target="_blank" class="inline-block text-[10px] bg-white px-2 py-1 rounded border border-gray-300 mt-2 hover:bg-gray-50 text-gray-600"><i class="fas fa-map-marker-alt text-red-500 mr-1"></i>開啟 Google Maps</a><div class="note-area mt-2 text-xs text-blue-600 font-bold hidden"></div></div></div><div class="relative flex items-start mb-6" id="card-d1-3"><div class="bg-blue-100 border-2 border-black w-8 h-8 rounded-full flex items-center justify-center z-10 mr-3 flex-shrink-0"><i class="fas fa-fish text-xs"></i></div><div class="sketch-box p-3 bg-blue-50 flex-1 border-dashed relative"><div class="absolute top-2 right-2 text-gray-400 cursor-pointer" onclick="editNote('card-d1-3')"><i class="fas fa-edit"></i></div><span class="text-[10px] font-bold bg-white px-1.5 py-0.5 rounded text-gray-600 mb-1 inline-block"><i class="far fa-clock mr-1"></i>08:45</span><h4 class="font-bold">柳橋中央市場</h4><p class="text-xs">生魚片、海鮮巡禮</p><a href="https://www.google.com/maps/search/?api=1&query=Yanagibashi+Central+Market" target="_blank" class="inline-block text-[10px] bg-white px-2 py-1 rounded border border-gray-300 mt-2 hover:bg-gray-50 text-gray-600"><i class="fas fa-map-marker-alt text-red-500 mr-1"></i>開啟 Google Maps</a><div class="note-area mt-2 text-xs text-blue-600 font-bold hidden"></div></div></div><div class="relative flex items-start mb-6" id="card-d1-4"><div class="bg-red-100 border-2 border-black w-8 h-8 rounded-full flex items-center justify-center z-10 mr-3 flex-shrink-0"><i class="fas fa-shopping-bag text-xs"></i></div><div class="sketch-card p-3 flex-1 relative"><div class="absolute top-2 right-2 text-gray-300 cursor-pointer" onclick="editNote('card-d1-4')"><i class="fas fa-edit"></i></div><span class="text-[10px] font-bold bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 mb-1 inline-block"><i class="far fa-clock mr-1"></i>13:30</span><h4 class="font-bold">大須商店街</h4><p class="text-xs text-gray-500">逛街、下午茶</p><a href="https://www.google.com/maps/search/?api=1&query=Osu+Shopping+District" target="_blank" class="inline-block text-[10px] bg-white px-2 py-1 rounded border border-gray-300 mt-2 hover:bg-gray-50 text-gray-600"><i class="fas fa-map-marker-alt text-red-500 mr-1"></i>開啟 Google Maps</a><div class="note-area mt-2 text-xs text-blue-600 font-bold hidden"></div></div></div><div class="relative flex items-start mb-6" id="card-d1-5"><div class="bg-yellow-100 border-2 border-black w-8 h-8 rounded-full flex items-center justify-center z-10 mr-3 flex-shrink-0"><i class="fas fa-drumstick-bite text-xs"></i></div><div class="sketch-card p-3 flex-1 border-l-4 border-black relative"><div class="absolute top-2 right-2 text-gray-300 cursor-pointer" onclick="editNote('card-d1-5')"><i class="fas fa-edit"></i></div><span class="text-[10px] font-bold bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 mb-1 inline-block"><i class="far fa-clock mr-1"></i>17:00</span><h4 class="font-bold">熱田蓬萊軒 (晚餐)</h4><p class="text-xs text-gray-500">必吃鰻魚飯三吃 Hitsumabushi</p><a href="https://www.google.com/maps/search/?api=1&query=Atsuta+Houraiken+Matsuzakaya" target="_blank" class="inline-block text-[10px] bg-white px-2 py-1 rounded border border-gray-300 mt-2 hover:bg-gray-50 text-gray-600"><i class="fas fa-map-marker-alt text-red-500 mr-1"></i>開啟 Google Maps</a><div class="note-area mt-2 text-xs text-blue-600 font-bold hidden"></div></div></div></div><div class="map-container"><h4 class="absolute top-2 left-3 font-bold text-[10px] bg-white px-2 py-1 border border-black rounded z-10">Day 1 Route</h4><svg viewBox="0 0 350 400" class="w-full h-full"><path d="M 120 0 Q 110 200 130 400" fill="none" stroke="#e0f2fe" stroke-width="20" stroke-linecap="round" /><line x1="0" y1="200" x2="350" y2="200" stroke="#e5e5e5" stroke-width="12" /><line x1="230" y1="0" x2="230" y2="400" stroke="#e5e5e5" stroke-width="12" /><path d="M 60 0 L 60 400" fill="none" stroke="#777" stroke-width="2" stroke-dasharray="4,4" /><path d="M 210 210 Q 250 150 240 80" fill="none" stroke="#38bdf8" stroke-width="4" stroke-dasharray="10,5" stroke-linecap="round" class="path-line" marker-end="url(#arrow-blue)" /><path d="M 240 80 Q 150 50 60 80" fill="none" stroke="#38bdf8" stroke-width="4" stroke-dasharray="10,5" stroke-linecap="round" class="path-line" marker-end="url(#arrow-blue)" /><path d="M 60 80 Q 80 150 120 200" fill="none" stroke="#38bdf8" stroke-width="4" stroke-dasharray="10,5" stroke-linecap="round" class="path-line" marker-end="url(#arrow-blue)" /><path d="M 120 200 Q 150 300 180 350" fill="none" stroke="#38bdf8" stroke-width="4" stroke-dasharray="10,5" stroke-linecap="round" class="path-line" marker-end="url(#arrow-blue)" /><path d="M 180 350 Q 220 300 210 210" fill="none" stroke="#38bdf8" stroke-width="4" stroke-dasharray="10,5" stroke-linecap="round" class="path-line" marker-end="url(#arrow-blue)" /><text x="40" y="80" font-size="24" filter="url(#dropShadow)">🚉</text><text x="60" y="95" text-anchor="middle" font-size="10" font-weight="bold" class="station-label">名站</text><text x="220" y="80" font-size="24" filter="url(#dropShadow)">🚉</text><text x="240" y="95" text-anchor="middle" font-size="10" font-weight="bold" class="station-label">榮</text><text x="100" y="200" font-size="24" filter="url(#dropShadow)">⛩️</text><text x="120" y="220" text-anchor="middle" font-size="10" font-weight="bold" class="station-label">大須</text><text x="160" y="350" font-size="24" filter="url(#dropShadow)">🍱</text><text x="180" y="370" text-anchor="middle" font-size="10" font-weight="bold" class="station-label">熱田</text><path d="M 190 200 Q 205 205 210 215" fill="none" stroke="black" stroke-width="1.5" stroke-dasharray="3,2" /><g transform="translate(210, 210)"><path d="M 0 15 L 15 0 L 30 15" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" /><path d="M 5 15 L 5 30 L 25 30 L 25 15" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" /><text x="15" y="45" text-anchor="middle" font-size="9" font-weight="bold" fill="#22c55e" class="station-label">住宿</text></g><text x="250" y="70" font-size="9" font-weight="bold" fill="#38bdf8" class="station-label">炸蝦三明治</text><circle cx="240" cy="80" r="8" fill="#38bdf8" stroke="white" stroke-width="2" transform="translate(0,20)"/> <text x="240" y="104" text-anchor="middle" font-size="10" font-weight="bold" fill="white">1</text><circle cx="60" cy="80" r="8" fill="#38bdf8" stroke="white" stroke-width="2" transform="translate(0,-15)"/> <text x="60" y="69" text-anchor="middle" font-size="10" font-weight="bold" fill="white">2</text><circle cx="120" cy="200" r="8" fill="#38bdf8" stroke="white" stroke-width="2"/> <text x="120" y="204" text-anchor="middle" font-size="10" font-weight="bold" fill="white">3</text><circle cx="180" cy="350" r="8" fill="#38bdf8" stroke="white" stroke-width="2"/> <text x="180" y="354" text-anchor="middle" font-size="10" font-weight="bold" fill="white">4</text></svg></div></div>`;
             } else if (dayId === 'day2') {
-                html = `
-                    <div id="day2-detail" class="day-detail">
-                        <h3 class="font-black text-xl mb-4 border-l-4 border-pink-400 pl-3">犬山城古都遊</h3>
-                        <div class="relative pl-2">
-                            <div class="timeline-line"></div>
-                            <div class="relative flex items-start mb-6"><div class="bg-white border-2 border-black w-8 h-8 rounded-full flex items-center justify-center z-10 mr-3 flex-shrink-0"><span class="font-bold text-xs">08:00</span></div><div class="sketch-card p-3 flex-1"><h4 class="font-bold">Bucyo Coffee</h4><p class="text-xs text-gray-500">小倉紅豆吐司</p></div></div>
-                            <div class="relative flex items-start mb-6"><div class="bg-pink-100 border-2 border-black w-8 h-8 rounded-full flex items-center justify-center z-10 mr-3 flex-shrink-0"><i class="fas fa-chess-rook text-xs"></i></div><div class="sketch-card p-3 flex-1"><h4 class="font-bold">犬山城</h4><p class="text-xs text-gray-500">國寶天守閣、城下町散策</p></div></div>
-                            <div class="relative flex items-start mb-6"><div class="bg-amber-100 border-2 border-black w-8 h-8 rounded-full flex items-center justify-center z-10 mr-3 flex-shrink-0"><i class="fas fa-coffee text-xs"></i></div><div class="sketch-card p-3 flex-1"><h4 class="font-bold">GOLPIE COFFEE</h4><p class="text-xs text-gray-500">川名山冠軍咖啡</p></div></div>
-                            <div class="relative flex items-start mb-6"><div class="bg-gray-800 text-white border-2 border-black w-8 h-8 rounded-full flex items-center justify-center z-10 mr-3 flex-shrink-0"><i class="fas fa-beer text-xs"></i></div><div class="sketch-card p-3 flex-1"><h4 class="font-bold">世界的山將</h4><p class="text-xs text-gray-500">夢幻手羽先</p></div></div>
-                        </div>
-                        <div class="map-container">
-                            <h4 class="absolute top-2 left-3 font-bold text-[10px] bg-white px-2 py-1 border border-black rounded z-10">Day 2 Route</h4>
-                            <svg viewBox="0 0 350 400" class="w-full h-full">
-                                <path d="M 120 0 Q 110 200 130 400" fill="none" stroke="#e0f2fe" stroke-width="20" stroke-linecap="round" />
-                                <path d="M 60 0 L 60 400" fill="none" stroke="#777" stroke-width="2" stroke-dasharray="4,4" />
-                                <path d="M 210 350 Q 160 320 60 250" fill="none" stroke="#ec4899" stroke-width="3" stroke-dasharray="8,5" class="path-line" marker-end="url(#arrow-pink)" />
-                                <path d="M 60 250 Q 60 150 180 50" fill="none" stroke="#ec4899" stroke-width="3" stroke-dasharray="8,5" class="path-line" marker-end="url(#arrow-pink)" />
-                                <path d="M 180 50 Q 300 200 280 300" fill="none" stroke="#ec4899" stroke-width="3" stroke-dasharray="8,5" class="path-line" marker-end="url(#arrow-pink)" />
-                                <path d="M 280 300 Q 250 340 210 350" fill="none" stroke="#ec4899" stroke-width="3" stroke-dasharray="8,5" class="path-line" marker-end="url(#arrow-pink)" />
-                                <text x="160" y="50" font-size="24" filter="url(#dropShadow)">🏯</text><text x="205" y="50" font-size="12" font-weight="bold" class="station-label">犬山</text>
-                                <text x="40" y="230" font-size="28" filter="url(#dropShadow)">🚉</text><text x="60" y="255" text-anchor="middle" font-size="10" font-weight="bold" class="station-label">名站</text>
-                                <text x="270" y="280" font-size="18" filter="url(#dropShadow)">☕</text><text x="300" y="300" text-anchor="middle" font-size="10" font-weight="bold" class="station-label">Golpie</text>
-                                <text x="160" y="330" font-size="28" filter="url(#dropShadow)">🚉</text><text x="180" y="355" text-anchor="middle" font-size="10" font-weight="bold" class="station-label">上前津</text>
-                                <path d="M 190 340 Q 205 345 210 355" fill="none" stroke="black" stroke-width="1.5" stroke-dasharray="3,2" /><g transform="translate(210, 350)"><path d="M 0 15 L 15 0 L 30 15" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" /><path d="M 5 15 L 5 30 L 25 30 L 25 15" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" /><text x="15" y="45" text-anchor="middle" font-size="9" font-weight="bold" fill="#22c55e" class="station-label">住宿</text></g>
-                                <text x="50" y="380" font-size="18">🌲</text><text x="280" y="100" font-size="18">🌲</text>
-                            </svg>
-                        </div>
-                    </div>
-                `;
+                // DAY 2 HTML
+                html = `<div id="day2-detail" class="day-detail"><h3 class="font-black text-xl mb-4 border-l-4 border-pink-400 pl-3">犬山城古都遊</h3><div class="relative pl-2"><div class="timeline-line"></div><div class="relative flex items-start mb-6" id="card-d2-1"><div class="bg-white border-2 border-black w-8 h-8 rounded-full flex items-center justify-center z-10 mr-3 flex-shrink-0"><span class="font-bold text-xs">08:00</span></div><div class="sketch-card p-3 flex-1 relative"><div class="absolute top-2 right-2 text-gray-300 cursor-pointer" onclick="editNote('card-d2-1')"><i class="fas fa-edit"></i></div><span class="text-[10px] font-bold bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 mb-1 inline-block"><i class="far fa-clock mr-1"></i>08:00</span><h4 class="font-bold">Bucyo Coffee</h4><p class="text-xs text-gray-500">小倉紅豆吐司</p><a href="https://www.google.com/maps/search/?api=1&query=Bucyo+Coffee+KAKO" target="_blank" class="inline-block text-[10px] bg-white px-2 py-1 rounded border border-gray-300 mt-2 hover:bg-gray-50 text-gray-600"><i class="fas fa-map-marker-alt text-red-500 mr-1"></i>開啟 Google Maps</a><div class="note-area mt-2 text-xs text-blue-600 font-bold hidden"></div></div></div><div class="relative flex items-start mb-6" id="card-d2-2"><div class="bg-pink-100 border-2 border-black w-8 h-8 rounded-full flex items-center justify-center z-10 mr-3 flex-shrink-0"><i class="fas fa-chess-rook text-xs"></i></div><div class="sketch-card p-3 flex-1 relative"><div class="absolute top-2 right-2 text-gray-300 cursor-pointer" onclick="editNote('card-d2-2')"><i class="fas fa-edit"></i></div><span class="text-[10px] font-bold bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 mb-1 inline-block"><i class="far fa-clock mr-1"></i>10:00</span><h4 class="font-bold">犬山城</h4><p class="text-xs text-gray-500">國寶天守閣、城下町散策</p><div class="text-[10px] text-blue-600 font-bold mt-1"><i class="fas fa-ticket-alt mr-1"></i>門票: ¥550</div><a href="https://www.google.com/maps/search/?api=1&query=Inuyama+Castle" target="_blank" class="inline-block text-[10px] bg-white px-2 py-1 rounded border border-gray-300 mt-2 hover:bg-gray-50 text-gray-600"><i class="fas fa-map-marker-alt text-red-500 mr-1"></i>開啟 Google Maps</a><div class="note-area mt-2 text-xs text-blue-600 font-bold hidden"></div></div></div><div class="relative flex items-start mb-6" id="card-d2-3"><div class="bg-amber-100 border-2 border-black w-8 h-8 rounded-full flex items-center justify-center z-10 mr-3 flex-shrink-0"><i class="fas fa-coffee text-xs"></i></div><div class="sketch-card p-3 flex-1 relative"><div class="absolute top-2 right-2 text-gray-300 cursor-pointer" onclick="editNote('card-d2-3')"><i class="fas fa-edit"></i></div><span class="text-[10px] font-bold bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 mb-1 inline-block"><i class="far fa-clock mr-1"></i>15:00</span><h4 class="font-bold">GOLPIE COFFEE</h4><p class="text-xs text-gray-500">川名山冠軍咖啡</p><a href="https://www.google.com/maps/search/?api=1&query=GOLPIE+COFFEE" target="_blank" class="inline-block text-[10px] bg-white px-2 py-1 rounded border border-gray-300 mt-2 hover:bg-gray-50 text-gray-600"><i class="fas fa-map-marker-alt text-red-500 mr-1"></i>開啟 Google Maps</a><div class="note-area mt-2 text-xs text-blue-600 font-bold hidden"></div></div></div><div class="relative flex items-start mb-6" id="card-d2-4"><div class="bg-gray-800 text-white border-2 border-black w-8 h-8 rounded-full flex items-center justify-center z-10 mr-3 flex-shrink-0"><i class="fas fa-beer text-xs"></i></div><div class="sketch-card p-3 flex-1 relative"><div class="absolute top-2 right-2 text-gray-300 cursor-pointer" onclick="editNote('card-d2-4')"><i class="fas fa-edit"></i></div><span class="text-[10px] font-bold bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded mb-1 inline-block"><i class="far fa-clock mr-1"></i>19:00</span><h4 class="font-bold">世界的山將</h4><p class="text-xs text-gray-500">夢幻手羽先</p><a href="https://www.google.com/maps/search/?api=1&query=Sekai+no+Yamachan" target="_blank" class="inline-block text-[10px] bg-white px-2 py-1 rounded border border-gray-300 mt-2 hover:bg-gray-50 text-gray-600"><i class="fas fa-map-marker-alt text-red-500 mr-1"></i>開啟 Google Maps</a><div class="note-area mt-2 text-xs text-blue-600 font-bold hidden"></div></div></div></div><div class="map-container"><h4 class="absolute top-2 left-3 font-bold text-[10px] bg-white px-2 py-1 border border-black rounded z-10">Day 2 Route</h4><svg viewBox="0 0 350 400" class="w-full h-full"><path d="M 120 0 Q 110 200 130 400" fill="none" stroke="#e0f2fe" stroke-width="20" stroke-linecap="round" /><path d="M 60 0 L 60 400" fill="none" stroke="#777" stroke-width="2" stroke-dasharray="4,4" /><path d="M 210 350 Q 160 320 60 250" fill="none" stroke="#ec4899" stroke-width="3" stroke-dasharray="8,5" class="path-line" marker-end="url(#arrow-pink)" /><path d="M 60 250 Q 60 150 180 50" fill="none" stroke="#ec4899" stroke-width="3" stroke-dasharray="8,5" class="path-line" marker-end="url(#arrow-pink)" /><path d="M 180 50 Q 300 200 280 300" fill="none" stroke="#ec4899" stroke-width="3" stroke-dasharray="8,5" class="path-line" marker-end="url(#arrow-pink)" /><path d="M 280 300 Q 250 340 210 350" fill="none" stroke="#ec4899" stroke-width="3" stroke-dasharray="8,5" class="path-line" marker-end="url(#arrow-pink)" /><text x="160" y="50" font-size="24" filter="url(#dropShadow)">🏯</text><text x="205" y="50" font-size="12" font-weight="bold" class="station-label">犬山</text><text x="40" y="230" font-size="28" filter="url(#dropShadow)">🚉</text><text x="60" y="255" text-anchor="middle" font-size="10" font-weight="bold" class="station-label">名站</text><text x="270" y="280" font-size="18" filter="url(#dropShadow)">☕</text><text x="300" y="300" text-anchor="middle" font-size="10" font-weight="bold" class="station-label">Golpie</text><text x="160" y="330" font-size="28" filter="url(#dropShadow)">🚉</text><text x="180" y="355" text-anchor="middle" font-size="10" font-weight="bold" class="station-label">上前津</text><path d="M 190 340 Q 205 345 210 355" fill="none" stroke="black" stroke-width="1.5" stroke-dasharray="3,2" /><g transform="translate(210, 350)"><path d="M 0 15 L 15 0 L 30 15" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" /><path d="M 5 15 L 5 30 L 25 30 L 25 15" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" /><text x="15" y="45" text-anchor="middle" font-size="9" font-weight="bold" fill="#22c55e" class="station-label">住宿</text></g><text x="50" y="380" font-size="18">🌲</text><text x="280" y="100" font-size="18">🌲</text></svg></div></div>`;
             } else {
-                html = `
-                    <div id="day3-detail" class="day-detail">
-                        <h3 class="font-black text-xl mb-4 border-l-4 border-yellow-400 pl-3">名城與購物</h3>
-                        <div class="relative pl-2">
-                            <div class="timeline-line"></div>
-                            <div class="relative flex items-start mb-6"><div class="bg-white border-2 border-black w-8 h-8 rounded-full flex items-center justify-center z-10 mr-3 flex-shrink-0"><span class="font-bold text-xs">08:00</span></div><div class="sketch-card p-3 flex-1"><h4 class="font-bold">Karasu</h4><p class="text-xs text-gray-500">孤獨的美食家咖啡廳</p></div></div>
-                            <div class="relative flex items-start mb-6"><div class="bg-yellow-100 border-2 border-black w-8 h-8 rounded-full flex items-center justify-center z-10 mr-3 flex-shrink-0"><i class="fas fa-landmark text-xs"></i></div><div class="sketch-card p-3 flex-1"><h4 class="font-bold">名古屋城</h4><p class="text-xs text-gray-500">金鯱與本丸御殿</p></div></div>
-                            <div class="relative flex items-start mb-6"><div class="bg-green-100 border-2 border-black w-8 h-8 rounded-full flex items-center justify-center z-10 mr-3 flex-shrink-0"><i class="fas fa-tree text-xs"></i></div><div class="sketch-card p-3 flex-1"><h4 class="font-bold">德川園</h4><p class="text-xs text-gray-500">日式庭園散步</p></div></div>
-                            <div class="relative flex items-start mb-6"><div class="bg-white border-2 border-black w-8 h-8 rounded-full flex items-center justify-center z-10 mr-3 flex-shrink-0"><i class="fas fa-utensils text-xs"></i></div><div class="sketch-card p-3 flex-1"><h4 class="font-bold">Yellow</h4><p class="text-xs text-gray-500">則武新町 濃厚歐姆蛋包飯</p></div></div>
-                            <div class="relative flex items-start mb-6"><div class="bg-purple-100 border-2 border-black w-8 h-8 rounded-full flex items-center justify-center z-10 mr-3 flex-shrink-0"><i class="fas fa-shopping-bag text-xs"></i></div><div class="sketch-card p-3 flex-1"><h4 class="font-bold">榮 (Sakae)</h4><p class="text-xs text-gray-500">LACHIC, 中日大樓</p></div></div>
-                            <div class="relative flex items-start mb-6"><div class="bg-orange-100 border-2 border-black w-8 h-8 rounded-full flex items-center justify-center z-10 mr-3 flex-shrink-0"><i class="fas fa-shrimp text-xs"></i></div><div class="sketch-card p-3 flex-1"><h4 class="font-bold">海老どて食堂</h4><p class="text-xs text-gray-500">35cm 特大炸蝦</p></div></div>
-                        </div>
-                        <div class="map-container">
-                            <h4 class="absolute top-2 left-3 font-bold text-[10px] bg-white px-2 py-1 border border-black rounded z-10">Day 3 Route</h4>
-                            <svg viewBox="0 0 350 400" class="w-full h-full">
-                                <path d="M 120 0 Q 110 200 130 400" fill="none" stroke="#e0f2fe" stroke-width="20" stroke-linecap="round" />
-                                <line x1="0" y1="200" x2="350" y2="200" stroke="#e5e5e5" stroke-width="12" />
-                                <line x1="230" y1="0" x2="230" y2="400" stroke="#e5e5e5" stroke-width="12" />
-                                <path d="M 210 350 Q 200 250 120 100" fill="none" stroke="#4ade80" stroke-width="4" stroke-dasharray="6,8" stroke-linecap="round" class="path-line" marker-end="url(#arrow-green)" />
-                                <path d="M 120 100 Q 200 80 280 120" fill="none" stroke="#4ade80" stroke-width="4" stroke-dasharray="6,8" stroke-linecap="round" class="path-line" marker-end="url(#arrow-green)" /> 
-                                <path d="M 280 120 Q 280 180 230 220" fill="none" stroke="#4ade80" stroke-width="4" stroke-dasharray="6,8" stroke-linecap="round" class="path-line" marker-end="url(#arrow-green)" /> 
-                                <path d="M 230 220 Q 240 300 210 350" fill="none" stroke="#4ade80" stroke-width="4" stroke-dasharray="6,8" stroke-linecap="round" class="path-line" marker-end="url(#arrow-green)" /> 
-                                <text x="120" y="90" font-size="24" filter="url(#dropShadow)">🐋</text><text x="110" y="80" font-size="10" font-weight="bold" class="station-label">名古屋城</text>
-                                <text x="280" y="110" text-anchor="middle" font-size="10" font-weight="bold" class="station-label">德川園</text>
-                                <text x="210" y="200" font-size="28" filter="url(#dropShadow)">🚉</text><text x="230" y="225" text-anchor="middle" font-size="10" font-weight="bold" class="station-label">榮</text>
-                                <circle cx="120" cy="100" r="8" fill="#4ade80" stroke="white" stroke-width="2"/> <text x="120" y="104" text-anchor="middle" font-size="10" font-weight="bold" fill="white">1</text>
-                                <circle cx="280" cy="120" r="8" fill="#4ade80" stroke="white" stroke-width="2"/> <text x="280" y="124" text-anchor="middle" font-size="10" font-weight="bold" fill="white">2</text>
-                                <circle cx="230" cy="220" r="8" fill="#4ade80" stroke="white" stroke-width="2" transform="translate(15,-10)"/> <text x="245" y="214" text-anchor="middle" font-size="10" font-weight="bold" fill="white">3</text>
-                                <text x="160" y="330" font-size="28" filter="url(#dropShadow)">🚉</text><text x="180" y="355" text-anchor="middle" font-size="10" font-weight="bold" class="station-label">上前津</text>
-                                <path d="M 190 340 Q 205 345 210 355" fill="none" stroke="black" stroke-width="1.5" stroke-dasharray="3,2" /><g transform="translate(210, 350)"><path d="M 0 15 L 15 0 L 30 15" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" /><path d="M 5 15 L 5 30 L 25 30 L 25 15" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" /><text x="15" y="45" text-anchor="middle" font-size="9" font-weight="bold" fill="#22c55e" class="station-label">住宿</text></g>
-                            </svg>
-                        </div>
-                    </div>
-                `;
+                // DAY 3 HTML
+                html = `<div id="day3-detail" class="day-detail"><h3 class="font-black text-xl mb-4 border-l-4 border-yellow-400 pl-3">名城與購物</h3><div class="relative pl-2"><div class="timeline-line"></div><div class="relative flex items-start mb-6" id="card-d3-1"><div class="bg-white border-2 border-black w-8 h-8 rounded-full flex items-center justify-center z-10 mr-3 flex-shrink-0"><span class="font-bold text-xs">08:00</span></div><div class="sketch-card p-3 flex-1 relative"><div class="absolute top-2 right-2 text-gray-300 cursor-pointer" onclick="editNote('card-d3-1')"><i class="fas fa-edit"></i></div><span class="text-[10px] font-bold bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 mb-1 inline-block"><i class="far fa-clock mr-1"></i>08:00</span><h4 class="font-bold">Karasu</h4><p class="text-xs text-gray-500">孤獨的美食家咖啡廳</p><a href="https://www.google.com/maps/search/?api=1&query=Coffee+Shop+Karasu+Nagoya" target="_blank" class="inline-block text-[10px] bg-white px-2 py-1 rounded border border-gray-300 mt-2 hover:bg-gray-50 text-gray-600"><i class="fas fa-map-marker-alt text-red-500 mr-1"></i>開啟 Google Maps</a><div class="note-area mt-2 text-xs text-blue-600 font-bold hidden"></div></div></div><div class="relative flex items-start mb-6" id="card-d3-2"><div class="bg-yellow-100 border-2 border-black w-8 h-8 rounded-full flex items-center justify-center z-10 mr-3 flex-shrink-0"><i class="fas fa-landmark text-xs"></i></div><div class="sketch-card p-3 flex-1 relative"><div class="absolute top-2 right-2 text-gray-300 cursor-pointer" onclick="editNote('card-d3-2')"><i class="fas fa-edit"></i></div><span class="text-[10px] font-bold bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 mb-1 inline-block"><i class="far fa-clock mr-1"></i>09:30</span><h4 class="font-bold">名古屋城</h4><p class="text-xs text-gray-500">金鯱與本丸御殿</p><div class="text-[10px] text-blue-600 font-bold mt-1"><i class="fas fa-ticket-alt mr-1"></i>門票: ¥500</div><a href="https://www.google.com/maps/search/?api=1&query=Nagoya+Castle" target="_blank" class="inline-block text-[10px] bg-white px-2 py-1 rounded border border-gray-300 mt-2 hover:bg-gray-50 text-gray-600"><i class="fas fa-map-marker-alt text-red-500 mr-1"></i>開啟 Google Maps</a><div class="note-area mt-2 text-xs text-blue-600 font-bold hidden"></div></div></div><div class="relative flex items-start mb-6" id="card-d3-3"><div class="bg-green-100 border-2 border-black w-8 h-8 rounded-full flex items-center justify-center z-10 mr-3 flex-shrink-0"><i class="fas fa-tree text-xs"></i></div><div class="sketch-card p-3 flex-1 relative"><div class="absolute top-2 right-2 text-gray-300 cursor-pointer" onclick="editNote('card-d3-3')"><i class="fas fa-edit"></i></div><span class="text-[10px] font-bold bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 mb-1 inline-block"><i class="far fa-clock mr-1"></i>11:30</span><h4 class="font-bold">德川園</h4><p class="text-xs text-gray-500">日式庭園散步</p><div class="text-[10px] text-blue-600 font-bold mt-1"><i class="fas fa-ticket-alt mr-1"></i>門票: ¥300</div><a href="https://www.google.com/maps/search/?api=1&query=Tokugawaen" target="_blank" class="inline-block text-[10px] bg-white px-2 py-1 rounded border border-gray-300 mt-2 hover:bg-gray-50 text-gray-600"><i class="fas fa-map-marker-alt text-red-500 mr-1"></i>開啟 Google Maps</a><div class="note-area mt-2 text-xs text-blue-600 font-bold hidden"></div></div></div><div class="relative flex items-start mb-6" id="card-d3-4"><div class="bg-white border-2 border-black w-8 h-8 rounded-full flex items-center justify-center z-10 mr-3 flex-shrink-0"><i class="fas fa-utensils text-xs"></i></div><div class="sketch-card p-3 flex-1 relative"><div class="absolute top-2 right-2 text-gray-300 cursor-pointer" onclick="editNote('card-d3-4')"><i class="fas fa-edit"></i></div><span class="text-[10px] font-bold bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 mb-1 inline-block"><i class="far fa-clock mr-1"></i>13:00</span><h4 class="font-bold">Yellow</h4><p class="text-xs text-gray-500">則武新町 濃厚歐姆蛋包飯</p><a href="https://www.google.com/maps/search/?api=1&query=Yellow+Tomato+Curried+Rice+Nagoya" target="_blank" class="inline-block text-[10px] bg-white px-2 py-1 rounded border border-gray-300 mt-2 hover:bg-gray-50 text-gray-600"><i class="fas fa-map-marker-alt text-red-500 mr-1"></i>開啟 Google Maps</a><div class="note-area mt-2 text-xs text-blue-600 font-bold hidden"></div></div></div><div class="relative flex items-start mb-6" id="card-d3-5"><div class="bg-purple-100 border-2 border-black w-8 h-8 rounded-full flex items-center justify-center z-10 mr-3 flex-shrink-0"><i class="fas fa-shopping-bag text-xs"></i></div><div class="sketch-card p-3 flex-1 relative"><div class="absolute top-2 right-2 text-gray-300 cursor-pointer" onclick="editNote('card-d3-5')"><i class="fas fa-edit"></i></div><span class="text-[10px] font-bold bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 mb-1 inline-block"><i class="far fa-clock mr-1"></i>15:00</span><h4 class="font-bold">榮 (Sakae)</h4><p class="text-xs text-gray-500">LACHIC, 中日大樓</p><a href="https://www.google.com/maps/search/?api=1&query=Sakae+Nagoya" target="_blank" class="inline-block text-[10px] bg-white px-2 py-1 rounded border border-gray-300 mt-2 hover:bg-gray-50 text-gray-600"><i class="fas fa-map-marker-alt text-red-500 mr-1"></i>開啟 Google Maps</a><div class="note-area mt-2 text-xs text-blue-600 font-bold hidden"></div></div></div><div class="relative flex items-start mb-6" id="card-d3-6"><div class="bg-orange-100 border-2 border-black w-8 h-8 rounded-full flex items-center justify-center z-10 mr-3 flex-shrink-0"><i class="fas fa-shrimp text-xs"></i></div><div class="sketch-card p-3 flex-1 relative"><div class="absolute top-2 right-2 text-gray-300 cursor-pointer" onclick="editNote('card-d3-6')"><i class="fas fa-edit"></i></div><span class="text-[10px] font-bold bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 mb-1 inline-block"><i class="far fa-clock mr-1"></i>18:00</span><h4 class="font-bold">海老どて食堂</h4><p class="text-xs text-gray-500">35cm 特大炸蝦</p><a href="https://www.google.com/maps/search/?api=1&query=Ebidote+Shokudo" target="_blank" class="inline-block text-[10px] bg-white px-2 py-1 rounded border border-gray-300 mt-2 hover:bg-gray-50 text-gray-600"><i class="fas fa-map-marker-alt text-red-500 mr-1"></i>開啟 Google Maps</a><div class="note-area mt-2 text-xs text-blue-600 font-bold hidden"></div></div></div></div><div class="map-container"><h4 class="absolute top-2 left-3 font-bold text-[10px] bg-white px-2 py-1 border border-black rounded z-10">Day 3 Route</h4><svg viewBox="0 0 350 400" class="w-full h-full"><path d="M 120 0 Q 110 200 130 400" fill="none" stroke="#e0f2fe" stroke-width="20" stroke-linecap="round" /><line x1="0" y1="200" x2="350" y2="200" stroke="#e5e5e5" stroke-width="12" /><line x1="230" y1="0" x2="230" y2="400" stroke="#e5e5e5" stroke-width="12" /><path d="M 210 350 Q 200 250 120 100" fill="none" stroke="#4ade80" stroke-width="4" stroke-dasharray="6,8" stroke-linecap="round" class="path-line" marker-end="url(#arrow-green)" /><path d="M 120 100 Q 200 80 280 120" fill="none" stroke="#4ade80" stroke-width="4" stroke-dasharray="6,8" stroke-linecap="round" class="path-line" marker-end="url(#arrow-green)" /><path d="M 280 120 Q 280 180 230 220" fill="none" stroke="#4ade80" stroke-width="4" stroke-dasharray="6,8" stroke-linecap="round" class="path-line" marker-end="url(#arrow-green)" /><path d="M 230 220 Q 240 300 210 350" fill="none" stroke="#4ade80" stroke-width="4" stroke-dasharray="6,8" stroke-linecap="round" class="path-line" marker-end="url(#arrow-green)" /><text x="120" y="90" font-size="24" filter="url(#dropShadow)">🐋</text><text x="110" y="80" font-size="10" font-weight="bold" class="station-label">名古屋城</text><text x="280" y="110" text-anchor="middle" font-size="10" font-weight="bold" class="station-label">德川園</text><text x="210" y="200" font-size="28" filter="url(#dropShadow)">🚉</text><text x="230" y="225" text-anchor="middle" font-size="10" font-weight="bold" class="station-label">榮</text><circle cx="120" cy="100" r="8" fill="#4ade80" stroke="white" stroke-width="2"/> <text x="120" y="104" text-anchor="middle" font-size="10" font-weight="bold" fill="white">1</text><circle cx="280" cy="120" r="8" fill="#4ade80" stroke="white" stroke-width="2"/> <text x="280" y="124" text-anchor="middle" font-size="10" font-weight="bold" fill="white">2</text><circle cx="230" cy="220" r="8" fill="#4ade80" stroke="white" stroke-width="2" transform="translate(15,-10)"/> <text x="245" y="214" text-anchor="middle" font-size="10" font-weight="bold" fill="white">3</text><text x="160" y="330" font-size="28" filter="url(#dropShadow)">🚉</text><text x="180" y="355" text-anchor="middle" font-size="10" font-weight="bold" class="station-label">上前津</text><path d="M 190 340 Q 205 345 210 355" fill="none" stroke="black" stroke-width="1.5" stroke-dasharray="3,2" /><g transform="translate(210, 350)"><path d="M 0 15 L 15 0 L 30 15" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" /><path d="M 5 15 L 5 30 L 25 30 L 25 15" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" /><text x="15" y="45" text-anchor="middle" font-size="9" font-weight="bold" fill="#22c55e" class="station-label">住宿</text></g></svg></div></div>`;
             }
+            
+            // Set content
             contentDiv.innerHTML = html;
+
+            // Render Notes after content update
+            renderNotes();
         }
 
-        // ================= WALLET: CALCULATOR & EXPENSES =================
+        // ================= NOTES SYSTEM =================
+        let itineraryNotes = JSON.parse(localStorage.getItem('nagoya_itinerary_notes')) || {};
+
+        function editNote(cardId) {
+            const currentNote = itineraryNotes[cardId] || '';
+            const newNote = prompt("輸入筆記內容 (例如：改訂19:00、雨天備案)：", currentNote);
+            if(newNote !== null) {
+                itineraryNotes[cardId] = newNote;
+                localStorage.setItem('nagoya_itinerary_notes', JSON.stringify(itineraryNotes));
+                renderNotes();
+            }
+        }
+
+        function renderNotes() {
+            for (const [id, note] of Object.entries(itineraryNotes)) {
+                const card = document.getElementById(id);
+                if(card) {
+                    const noteArea = card.querySelector('.note-area');
+                    if(noteArea) {
+                        if(note && note.trim() !== '') {
+                            noteArea.textContent = `📝 ${note}`;
+                            noteArea.classList.remove('hidden');
+                        } else {
+                            noteArea.classList.add('hidden');
+                        }
+                    }
+                }
+            }
+        }
+
+        // ================= BUDGET & WALLET =================
         const calcInput = document.getElementById('calc-input');
         const calcResult = document.getElementById('calc-result');
         const rateDisplay = document.getElementById('exchange-rate-display');
+        const budgetInput = document.getElementById('budget-input');
+        const budgetBar = document.getElementById('budget-bar');
+        
+        // Load Budget
+        let budget = localStorage.getItem('nagoya_budget') || 0;
+        budgetInput.value = budget > 0 ? budget : '';
+
+        function updateBudget() {
+            const val = parseFloat(budgetInput.value);
+            if(!isNaN(val)) {
+                budget = val;
+                localStorage.setItem('nagoya_budget', budget);
+                renderExpenses(); // Re-calc progress
+            }
+        }
+
+        // ... (Currency and Expense logic from previous turn remains, adding split bill logic) ...
+        let expensesData = JSON.parse(localStorage.getItem('nagoya_expenses_v2')) || {
+            food: [], shopping: [], transport: [], accommodation: [], other: []
+        };
 
         async function fetchRate() {
             try {
@@ -773,7 +788,7 @@
                 if(data.rates.TWD) {
                     exchangeRate = data.rates.TWD;
                     rateDisplay.textContent = exchangeRate.toFixed(3);
-                    renderExpenses(); // Re-render to update TWD totals
+                    renderExpenses();
                 }
             } catch(e) { console.log('Rate fetch failed'); }
         }
@@ -789,10 +804,48 @@
             } catch(e) {}
         });
 
-        // Initialize Data
-        let expensesData = JSON.parse(localStorage.getItem('nagoya_expenses_v2')) || {
-            food: [], shopping: [], transport: [], accommodation: [], other: []
-        };
+        function addExpense() {
+            const desc = document.getElementById('expense-item').value.trim();
+            const amount = document.getElementById('expense-amount').value;
+            const category = document.getElementById('expense-category').value;
+            const currency = document.getElementById('expense-currency').value;
+            const photo = document.getElementById('expense-photo-base64').value;
+            const isShared = document.getElementById('expense-shared').checked;
+
+            if(!desc || !amount) { alert('請輸入名稱與金額'); return; }
+
+            if (!expensesData[category]) expensesData[category] = [];
+            
+            expensesData[category].push({
+                desc,
+                amount,
+                currency,
+                photo,
+                isShared,
+                date: new Date().toISOString()
+            });
+
+            localStorage.setItem('nagoya_expenses_v2', JSON.stringify(expensesData));
+
+            // Reset Form
+            document.getElementById('expense-item').value = '';
+            document.getElementById('expense-amount').value = '';
+            document.getElementById('expense-photo').value = '';
+            document.getElementById('expense-photo-base64').value = '';
+            document.getElementById('expense-shared').checked = false;
+            document.getElementById('photo-label').textContent = "照片";
+            document.getElementById('photo-label').classList.remove('text-green-600', 'font-bold');
+
+            renderExpenses();
+        }
+
+        function deleteExpense(catId, index) {
+            if (confirm('確定刪除此筆紀錄？')) {
+                expensesData[catId].splice(index, 1);
+                localStorage.setItem('nagoya_expenses_v2', JSON.stringify(expensesData));
+                renderExpenses();
+            }
+        }
 
         function renderExpenses() {
             const container = document.getElementById('expenses-container');
@@ -846,8 +899,9 @@
                         html += `
                             <div class="expense-row">
                                 <div class="flex items-center gap-2">
-                                    ${item.photo ? `<img src="${item.photo}" class="w-8 h-8 object-cover rounded border border-black" onclick="alert('Photo View')">` : ''}
+                                    ${item.photo ? `<img src="${item.photo}" class="w-8 h-8 object-cover rounded border border-black cursor-pointer" onclick="alert('Photo preview not implemented in this demo')">` : ''}
                                     <span class="font-bold text-gray-700 text-sm">${item.desc}</span>
+                                    ${item.isShared ? '<span class="bg-green-100 text-green-700 text-[10px] px-1 rounded font-bold">公費</span>' : ''}
                                 </div>
                                 <div class="flex items-center">
                                     <span class="font-black mr-2 text-sm">${displayPrice}</span>
@@ -859,7 +913,7 @@
                 } else {
                     html += `<div class="text-xs text-gray-400 italic">無紀錄</div>`;
                 }
-                html += `</div>`; // End List
+                html += `</div>`;
                 section.innerHTML = html;
                 container.appendChild(section);
             });
@@ -909,12 +963,33 @@
             // Update Totals
             document.getElementById('total-jpy').textContent = Math.round(totalJPY).toLocaleString();
             document.getElementById('total-twd').textContent = Math.round(totalTWD).toLocaleString();
+            document.getElementById('budget-spent').textContent = Math.round(totalTWD).toLocaleString();
+            
+            // Update Budget Bar
+            if (budget > 0) {
+                const left = budget - totalTWD;
+                document.getElementById('budget-left').textContent = Math.round(left).toLocaleString();
+                const percent = Math.min((totalTWD / budget) * 100, 100);
+                budgetBar.style.width = `${percent}%`;
+                if(totalTWD > budget) {
+                    budgetBar.classList.remove('bg-green-500');
+                    budgetBar.classList.add('bg-red-500');
+                    document.getElementById('budget-left').classList.add('text-red-500');
+                } else {
+                    budgetBar.classList.add('bg-green-500');
+                    budgetBar.classList.remove('bg-red-500');
+                    document.getElementById('budget-left').classList.remove('text-red-500');
+                }
+            } else {
+                document.getElementById('budget-left').textContent = "-";
+                budgetBar.style.width = '0%';
+            }
         }
 
         function handlePhotoUpload(input) {
             const label = document.getElementById('photo-label');
             if(input.files && input.files[0]) {
-                label.textContent = "照片已選";
+                label.textContent = "已選";
                 label.classList.add('text-green-600', 'font-bold');
                 
                 const file = input.files[0];
@@ -937,118 +1012,146 @@
             }
         }
 
-        function addExpense() {
-            const desc = document.getElementById('expense-item').value.trim();
-            const amount = document.getElementById('expense-amount').value;
-            const category = document.getElementById('expense-category').value;
-            const currency = document.getElementById('expense-currency').value;
-            const photo = document.getElementById('expense-photo-base64').value;
-
-            if(!desc || !amount) { alert('請輸入名稱與金額'); return; }
-
-            if (!expensesData[category]) expensesData[category] = [];
-            
-            expensesData[category].push({
-                desc,
-                amount,
-                currency,
-                photo,
-                date: new Date().toISOString()
-            });
-
-            localStorage.setItem('nagoya_expenses_v2', JSON.stringify(expensesData));
-
-            // Reset Form
-            document.getElementById('expense-item').value = '';
-            document.getElementById('expense-amount').value = '';
-            document.getElementById('expense-photo').value = '';
-            document.getElementById('expense-photo-base64').value = '';
-            document.getElementById('photo-label').textContent = "上傳照片 (選填)";
-            document.getElementById('photo-label').classList.remove('text-green-600', 'font-bold');
-
-            renderExpenses();
+        // ================= UTILS: BACKUP/RESTORE =================
+        function exportData() {
+            const data = {
+                expenses: JSON.parse(localStorage.getItem('nagoya_expenses_v2')),
+                checklist: JSON.parse(localStorage.getItem('nagoya_checklist')),
+                notes: JSON.parse(localStorage.getItem('nagoya_itinerary_notes')),
+                memo: localStorage.getItem('nagoya_memo'),
+                budget: localStorage.getItem('nagoya_budget')
+            };
+            const str = JSON.stringify(data);
+            navigator.clipboard.writeText(str).then(() => alert("資料已複製到剪貼簿！請貼到記事本保存。"));
         }
 
-        function deleteExpense(catId, index) {
-            if (confirm('確定刪除此筆紀錄？')) {
-                expensesData[catId].splice(index, 1);
-                localStorage.setItem('nagoya_expenses_v2', JSON.stringify(expensesData));
-                renderExpenses();
+        function importData() {
+            const str = prompt("請貼上備份代碼：");
+            if(str) {
+                try {
+                    const data = JSON.parse(str);
+                    if(data.expenses) localStorage.setItem('nagoya_expenses_v2', JSON.stringify(data.expenses));
+                    if(data.checklist) localStorage.setItem('nagoya_checklist', JSON.stringify(data.checklist));
+                    if(data.notes) localStorage.setItem('nagoya_itinerary_notes', JSON.stringify(data.notes));
+                    if(data.memo) localStorage.setItem('nagoya_memo', data.memo);
+                    if(data.budget) localStorage.setItem('nagoya_budget', data.budget);
+                    alert("資料匯入成功！網頁將重新整理。");
+                    location.reload();
+                } catch(e) {
+                    alert("代碼錯誤，無法匯入。");
+                }
             }
         }
 
-        // ================= LISTS: CHECKLIST & MEMO =================
+        // ================= MODAL =================
+        function toggleModal(id) {
+            const modal = document.getElementById(id);
+            modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        // ================= LISTS & OTHERS =================
         function renderChecklist() {
             let list = JSON.parse(localStorage.getItem('nagoya_checklist'));
-            if(!list) {
-                list = defaultChecklist;
-                localStorage.setItem('nagoya_checklist', JSON.stringify(list));
-            }
+            if(!list) { list = defaultChecklist; localStorage.setItem('nagoya_checklist', JSON.stringify(list)); }
             const container = document.getElementById('checklist-container');
             container.innerHTML = '';
-            
             list.forEach((item, index) => {
                 const div = document.createElement('div');
                 div.className = 'flex items-center gap-2 p-2 border-b border-dashed border-gray-200';
-                div.innerHTML = `
-                    <input type="checkbox" id="check-${index}" ${item.checked ? 'checked' : ''} class="w-5 h-5 accent-black">
-                    <label for="check-${index}" class="flex-1 ${item.checked ? 'line-through text-gray-400' : ''}">${item.text}</label>
-                    <i class="fas fa-times text-gray-300 cursor-pointer" onclick="removeCheckItem(${index})"></i>
-                `;
-                div.querySelector('input').addEventListener('change', (e) => {
-                    list[index].checked = e.target.checked;
-                    localStorage.setItem('nagoya_checklist', JSON.stringify(list));
-                    renderChecklist();
-                });
+                div.innerHTML = `<input type="checkbox" id="check-${index}" ${item.checked ? 'checked' : ''} class="w-5 h-5 accent-black"><label for="check-${index}" class="flex-1 ${item.checked ? 'line-through text-gray-400' : ''}">${item.text}</label><i class="fas fa-times text-gray-300 cursor-pointer" onclick="removeCheckItem(${index})"></i>`;
+                div.querySelector('input').addEventListener('change', (e) => { list[index].checked = e.target.checked; localStorage.setItem('nagoya_checklist', JSON.stringify(list)); renderChecklist(); });
                 container.appendChild(div);
             });
         }
-
-        function addCheckItem() {
-            const input = document.getElementById('new-check-item');
-            if(input.value) {
-                let list = JSON.parse(localStorage.getItem('nagoya_checklist')) || [];
-                list.push({ text: input.value, checked: false });
-                localStorage.setItem('nagoya_checklist', JSON.stringify(list));
-                input.value = '';
-                renderChecklist();
-            }
-        }
-
-        function removeCheckItem(index) {
-            let list = JSON.parse(localStorage.getItem('nagoya_checklist'));
-            list.splice(index, 1);
-            localStorage.setItem('nagoya_checklist', JSON.stringify(list));
-            renderChecklist();
-        }
+        function addCheckItem() { const input = document.getElementById('new-check-item'); if(input.value) { let list = JSON.parse(localStorage.getItem('nagoya_checklist')) || []; list.push({ text: input.value, checked: false }); localStorage.setItem('nagoya_checklist', JSON.stringify(list)); input.value = ''; renderChecklist(); } }
+        function removeCheckItem(index) { let list = JSON.parse(localStorage.getItem('nagoya_checklist')); list.splice(index, 1); localStorage.setItem('nagoya_checklist', JSON.stringify(list)); renderChecklist(); }
 
         const memoArea = document.getElementById('memo-area');
-        const memoLinks = document.getElementById('memo-links');
         memoArea.value = localStorage.getItem('nagoya_memo') || '';
-        
-        memoArea.addEventListener('input', (e) => {
-            const text = e.target.value;
-            localStorage.setItem('nagoya_memo', text);
-            parseMemoLinks(text);
-        });
+        memoArea.addEventListener('input', (e) => { localStorage.setItem('nagoya_memo', e.target.value); });
 
+        // Missing function: parseMemoLinks
         function parseMemoLinks(text) {
             const urlRegex = /(https?:\/\/[^\s]+)/g;
             const matches = text.match(urlRegex);
-            memoLinks.innerHTML = '';
-            if(matches) {
-                matches.forEach(url => {
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.target = '_blank';
-                    a.className = 'text-[10px] bg-blue-100 text-blue-600 px-2 py-1 rounded truncate max-w-[100px] inline-block border border-blue-200';
-                    a.textContent = '🔗 Link';
-                    memoLinks.appendChild(a);
-                });
+            const memoLinks = document.getElementById('memo-links'); // Ensure this element exists
+            if(memoLinks) {
+                memoLinks.innerHTML = '';
+                if(matches) {
+                    matches.forEach(url => {
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.target = '_blank';
+                        a.className = 'text-[10px] bg-blue-100 text-blue-600 px-2 py-1 rounded truncate max-w-[100px] inline-block border border-blue-200';
+                        a.textContent = '🔗 Link';
+                        memoLinks.appendChild(a);
+                    });
+                }
             }
         }
 
-        // ================= INFO: WEATHER =================
+        // Helper: Haversine Formula
+        function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+            var R = 6371; // Radius of the earth in km
+            var dLat = deg2rad(lat2-lat1);
+            var dLon = deg2rad(lon2-lon1); 
+            var a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon/2) * Math.sin(dLon/2); 
+            var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+            var d = R * c; // Distance in km
+            return d;
+        }
+
+        function deg2rad(deg) {
+            return deg * (Math.PI/180);
+        }
+
+        // Find Nearest Help (Simple Implementation)
+        function findNearestHelp() {
+            const resultDiv = document.getElementById('help-result');
+            const nameEl = document.getElementById('help-name');
+            const distEl = document.getElementById('help-dist');
+            const linkEl = document.getElementById('help-link');
+            
+            nameEl.textContent = "定位中...";
+            resultDiv.classList.remove('hidden');
+
+            if (!navigator.geolocation) {
+                nameEl.textContent = "瀏覽器不支援定位";
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const userLat = position.coords.latitude;
+                    const userLng = position.coords.longitude;
+                    
+                    let minDist = Infinity;
+                    let nearest = null;
+
+                    emergencySpots.forEach(spot => {
+                        const d = getDistanceFromLatLonInKm(userLat, userLng, spot.lat, spot.lng);
+                        if (d < minDist) {
+                            minDist = d;
+                            nearest = spot;
+                        }
+                    });
+
+                    if (nearest) {
+                        nameEl.textContent = nearest.name;
+                        distEl.textContent = `距離約 ${minDist.toFixed(2)} 公里`;
+                        linkEl.href = `https://www.google.com/maps/dir/?api=1&destination=${nearest.lat},${nearest.lng}`;
+                        linkEl.classList.remove('hidden');
+                    }
+                },
+                () => {
+                    nameEl.textContent = "無法取得位置";
+                    distEl.textContent = "請確認定位權限";
+                }
+            );
+        }
+
         async function fetchWeather() {
             try {
                 const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=35.18&longitude=136.90&current_weather=true');
@@ -1062,13 +1165,29 @@
 
         // ================= INIT =================
         window.onload = function() {
-            switchDay('day1'); // Load Day 1 content
+            switchDay('day1');
             renderExpenses();
             renderChecklist();
-            parseMemoLinks(memoArea.value);
+            const memoArea = document.getElementById('memo-area');
+            if (memoArea) parseMemoLinks(memoArea.value); // Safe call
             fetchWeather();
-            updateCountdown(); // Start Countdown
+            updateCountdown();
+            setInterval(updateCountdown, 1000);
         };
+        
+        function updateCountdown() {
+            const targetDate = new Date('2026-03-02T16:45:00').getTime();
+            const now = new Date().getTime();
+            const distance = targetDate - now;
+            const el = document.getElementById('countdown-timer');
+            if(!el) return;
+            if (distance < 0) { el.innerHTML = "旅程已開始！"; return; }
+            const d = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const h = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            
+            el.innerHTML = `${d}天 ${h}時 ${m}分`;
+        }
 
     </script>
 </body>
