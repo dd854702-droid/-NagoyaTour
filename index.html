@@ -158,7 +158,7 @@
         .path-line {
             stroke-dasharray: 8, 4;
             stroke-dashoffset: 1000;
-            animation: drawLine 4s forwards ease-in-out;
+            animation: drawLine 3s forwards ease-in-out;
             stroke-linecap: round;
             stroke-linejoin: round;
         }
@@ -260,19 +260,31 @@
         <!-- ================= PAGE: PLAN (行程表) ================= -->
         <div id="page-plan" class="page-content active">
             
-            <!-- Flight Info -->
-            <div class="sketch-box p-3 bg-blue-50 mb-6 flex justify-between items-center">
-                <div class="flex-1">
-                    <div class="flex items-center gap-2 mb-1">
-                        <span class="bg-blue-600 text-white text-[10px] px-1 rounded">去程</span>
-                        <span class="text-xs font-bold">IT 778 (3/02)</span>
+            <!-- Flight Info (Updated with Time & Countdown) -->
+            <div class="sketch-box p-3 bg-blue-50 mb-6 relative overflow-hidden">
+                <div class="flex justify-between items-center relative z-10">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="bg-blue-600 text-white text-[10px] px-1 rounded">去程</span>
+                            <span class="text-xs font-bold">IT 778 (3/02)</span>
+                            <span class="text-[10px] text-gray-600 font-mono ml-1">16:45-20:25</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="bg-orange-500 text-white text-[10px] px-1 rounded">回程</span>
+                            <span class="text-xs font-bold">IT 779 (3/06)</span>
+                            <span class="text-[10px] text-gray-600 font-mono ml-1">13:15-15:25</span>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <span class="bg-orange-500 text-white text-[10px] px-1 rounded">回程</span>
-                        <span class="text-xs font-bold">IT 779 (3/06)</span>
+                    <div class="text-2xl opacity-20"><i class="fas fa-plane-departure"></i></div>
+                </div>
+                
+                <!-- Countdown -->
+                <div class="mt-3 pt-2 border-t border-blue-200 border-dashed">
+                    <div class="text-[10px] text-blue-500 font-bold mb-1">距離出發還有：</div>
+                    <div id="countdown-timer" class="text-lg font-black text-blue-800 font-mono tracking-tighter">
+                        Loading...
                     </div>
                 </div>
-                <div class="text-2xl opacity-20"><i class="fas fa-plane-departure"></i></div>
             </div>
 
             <!-- Accommodation -->
@@ -579,6 +591,33 @@
             { id: 'accommodation', name: '住宿', icon: 'fa-bed', color: 'bg-purple-50', chartColor: '#d8b4fe' },
             { id: 'other', name: '其他', icon: 'fa-ellipsis-h', color: 'bg-gray-100', chartColor: '#d1d5db' }
         ];
+
+        // ================= COUNTDOWN =================
+        function updateCountdown() {
+            // Target date: March 2, 2026, 16:45:00
+            const targetDate = new Date('2026-03-02T16:45:00').getTime();
+            const now = new Date().getTime();
+            const distance = targetDate - now;
+
+            const timerElement = document.getElementById('countdown-timer');
+            if (!timerElement) return;
+
+            if (distance < 0) {
+                timerElement.innerHTML = "旅程已開始！";
+                return;
+            }
+
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            timerElement.innerHTML = 
+                `${days}天 ${hours}時 ${minutes}分 ${seconds}秒`;
+        }
+
+        // Start countdown immediately and update every second
+        setInterval(updateCountdown, 1000);
 
         // ================= NAVIGATION =================
         function switchPage(pageId) {
@@ -1028,6 +1067,7 @@
             renderChecklist();
             parseMemoLinks(memoArea.value);
             fetchWeather();
+            updateCountdown(); // Start Countdown
         };
 
     </script>
