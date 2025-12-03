@@ -553,10 +553,10 @@
             </div>
         </div>
 
-        <!-- Add Item Modal -->
+        <!-- Add/Edit Item Modal -->
         <div id="modal-add-item" class="modal-overlay" onclick="if(event.target===this) toggleModal('modal-add-item')">
             <div class="modal-content">
-                <h3 class="font-bold text-lg mb-4 border-b-2 border-black pb-2">新增行程</h3>
+                <h3 class="font-bold text-lg mb-4 border-b-2 border-black pb-2" id="modal-title">新增行程</h3>
                 <div class="space-y-3">
                     <div>
                         <label class="text-xs font-bold text-gray-500">類型</label>
@@ -580,12 +580,16 @@
                             </div>
                         </div>
                         <div>
-                            <label class="text-xs font-bold text-gray-500">描述</label>
+                            <label class="text-xs font-bold text-gray-500">描述 (副標題)</label>
                             <input type="text" id="new-item-desc" placeholder="簡短說明" class="w-full border-2 border-gray-300 rounded p-2 text-black">
                         </div>
                         <div>
                             <label class="text-xs font-bold text-gray-500">Google Maps 搜尋關鍵字</label>
                             <input type="text" id="new-item-query" placeholder="用於地圖連結" class="w-full border-2 border-gray-300 rounded p-2 text-black">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500">備註 (藍色字體)</label>
+                            <input type="text" id="new-item-note" placeholder="額外筆記..." class="w-full border-2 border-gray-300 rounded p-2 text-black">
                         </div>
                     </div>
                     
@@ -595,7 +599,7 @@
                         <input type="text" id="new-item-trans-desc" placeholder="例：🚃 移動約 30分" class="w-full border-2 border-gray-300 rounded p-2 text-black">
                     </div>
 
-                    <button onclick="saveNewItem()" class="w-full bg-black text-white font-bold py-2 rounded mt-2">新增</button>
+                    <button onclick="saveNewItem()" id="btn-save-item" class="w-full bg-black text-white font-bold py-2 rounded mt-2">儲存</button>
                 </div>
             </div>
         </div>
@@ -615,6 +619,7 @@
         let exchangeRate = 0.215;
         let currentDayId = 'day1';
         let itineraryData = {};
+        let editingItemIndex = -1; // Track which item is being edited
 
         // Default Itinerary Data (Reference)
         const defaultItineraryData = {
@@ -645,7 +650,7 @@
                     { type: 'transport', desc: '🚃 移動約 20分' },
                     { type: 'spot', time: '08:00', title: 'Bucyo Coffee', desc: '小倉紅豆吐司', mapQuery: 'Bucyo Coffee KAKO', category: 'food' },
                     { type: 'transport', desc: '🚃 移動約 45分' },
-                    { type: 'spot', time: '10:00', title: '犬山城', desc: '國寶天守閣 (門票: ¥550)', mapQuery: 'Inuyama Castle', category: 'spot' },
+                    { type: 'spot', time: '10:00', title: '犬山城', desc: '國寶天守閣 (門票: ¥500)', mapQuery: 'Inuyama Castle', category: 'spot' },
                     { type: 'transport', desc: '🚶 散步' },
                     { type: 'spot', time: '12:30', title: 'Sakura Chaya', desc: '田樂烤豆腐串', mapQuery: 'Sakura Chaya Inuyama', category: 'food' },
                     { type: 'transport', desc: '🚃 13:30 出發 (車程約1.5hr)' },
@@ -786,7 +791,7 @@
                 const itemId = `card-${dayId}-${index}`;
                 if (item.type === 'transport') {
                     html += `<div class="relative flex items-center mb-6 group">
-                        <div class="timeline-travel">${item.desc}</div>
+                        <div class="timeline-travel cursor-pointer hover:bg-gray-100" onclick="editItem('${dayId}', ${index})">${item.desc}</div>
                         <button onclick="deleteItineraryItem('${dayId}', ${index})" class="ml-2 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i class="fas fa-trash-alt"></i></button>
                     </div>`;
                 } else {
@@ -802,18 +807,20 @@
                     const mapLink = item.mapQuery ? 
                         `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.mapQuery)}" target="_blank" class="inline-block text-[10px] bg-white px-2 py-1 rounded border border-gray-300 mt-2 hover:bg-gray-50 text-gray-600"><i class="fas fa-map-marker-alt text-red-500 mr-1"></i>Map</a>` : '';
 
+                    const noteHtml = item.note ? `<div class="note-area mt-2 text-xs text-blue-600 font-bold">📝 ${item.note}</div>` : '';
+
                     html += `<div class="relative flex items-start mb-6 group" id="${itemId}">
                         <div class="${iconBg} border-2 border-black w-8 h-8 rounded-full flex items-center justify-center z-10 mr-3 flex-shrink-0"><span class="font-bold text-xs">${item.time ? item.time.replace(':', '') : ''}</span></div>
                         <div class="${cardBg} p-3 flex-1 relative">
                             <div class="absolute top-2 right-2 flex gap-2">
-                                <span class="text-gray-300 cursor-pointer hover:text-black" onclick="editNote('${itemId}')"><i class="fas fa-edit"></i></span>
+                                <span class="text-gray-300 cursor-pointer hover:text-black" onclick="editItem('${dayId}', ${index})"><i class="fas fa-edit"></i></span>
                                 <span class="text-gray-300 cursor-pointer hover:text-red-500 opacity-0 group-hover:opacity-100 transition" onclick="deleteItineraryItem('${dayId}', ${index})"><i class="fas fa-trash-alt"></i></span>
                             </div>
                             <span class="text-[10px] font-bold bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 mb-1 inline-block"><i class="far fa-clock mr-1"></i>${item.time}</span>
                             <h4 class="font-bold">${item.title}</h4>
                             <p class="text-xs text-gray-500">${item.desc}</p>
                             ${mapLink}
-                            <div class="note-area mt-2 text-xs text-blue-600 font-bold hidden"></div>
+                            ${noteHtml}
                         </div>
                     </div>`;
                 }
@@ -831,10 +838,9 @@
             </div></div></div>`;
 
             contentDiv.innerHTML = html;
-            renderNotes();
         }
 
-        // Add/Delete Itinerary Functions
+        // Add/Delete/Edit Itinerary Functions
         function deleteItineraryItem(dayId, index) {
             if(confirm('確定要刪除此行程嗎？')) {
                 itineraryData[dayId].items.splice(index, 1);
@@ -844,14 +850,47 @@
         }
 
         function openAddItemModal(dayId) {
+            editingItemIndex = -1; // Reset to Add Mode
+            document.getElementById('modal-title').textContent = "新增行程";
+            document.getElementById('btn-save-item').textContent = "新增";
+            
             document.getElementById('new-item-type').value = 'spot';
             document.getElementById('new-item-time').value = '';
             document.getElementById('new-item-title').value = '';
             document.getElementById('new-item-desc').value = '';
             document.getElementById('new-item-query').value = '';
+            document.getElementById('new-item-note').value = '';
             document.getElementById('new-item-trans-desc').value = '';
+            
             document.getElementById('new-item-fields').classList.remove('hidden');
             document.getElementById('new-item-transport-fields').classList.add('hidden');
+            
+            toggleModal('modal-add-item');
+        }
+
+        function editItem(dayId, index) {
+            editingItemIndex = index;
+            const item = itineraryData[dayId].items[index];
+            
+            document.getElementById('modal-title').textContent = "編輯行程";
+            document.getElementById('btn-save-item').textContent = "儲存修改";
+            
+            document.getElementById('new-item-type').value = item.type;
+            
+            if (item.type === 'transport') {
+                document.getElementById('new-item-trans-desc').value = item.desc;
+                document.getElementById('new-item-fields').classList.add('hidden');
+                document.getElementById('new-item-transport-fields').classList.remove('hidden');
+            } else {
+                document.getElementById('new-item-time').value = item.time;
+                document.getElementById('new-item-title').value = item.title;
+                document.getElementById('new-item-desc').value = item.desc;
+                document.getElementById('new-item-query').value = item.mapQuery || '';
+                document.getElementById('new-item-note').value = item.note || '';
+                
+                document.getElementById('new-item-fields').classList.remove('hidden');
+                document.getElementById('new-item-transport-fields').classList.add('hidden');
+            }
             
             toggleModal('modal-add-item');
         }
@@ -869,6 +908,7 @@
                 const title = document.getElementById('new-item-title').value;
                 const desc = document.getElementById('new-item-desc').value;
                 const query = document.getElementById('new-item-query').value;
+                const note = document.getElementById('new-item-note').value;
                 
                 if(!title) { alert('請輸入標題'); return; }
                 
@@ -878,17 +918,51 @@
                     title: title,
                     desc: desc,
                     mapQuery: query,
-                    category: type
+                    category: type,
+                    note: note
                 };
             }
 
-            itineraryData[currentDayId].items.push(newItem);
-            // Sort by time if it's a spot (Optional, maybe just append for now to allow flexible ordering)
-            // itineraryData[currentDayId].items.sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99')); 
+            if (editingItemIndex > -1) {
+                // Update existing item
+                itineraryData[currentDayId].items[editingItemIndex] = newItem;
+            } else {
+                // Add new item
+                itineraryData[currentDayId].items.push(newItem);
+            }
+
+            // Auto Sort
+            sortItinerary(currentDayId);
             
             localStorage.setItem('nagoya_itinerary_data', JSON.stringify(itineraryData));
             toggleModal('modal-add-item');
             renderItinerary(currentDayId);
+        }
+
+        function sortItinerary(dayId) {
+            const items = itineraryData[dayId].items;
+            // Strategy: Assign a temp sort key. 
+            // If item has time, use it. If not (transport), use previous item's time to keep it attached.
+            let lastTime = "00:00";
+            
+            const itemsWithSortKey = items.map((item, index) => {
+                if (item.time) {
+                    lastTime = item.time;
+                    return { item, sortTime: item.time, originalIndex: index };
+                } else {
+                    // For transport without time, assume it happens immediately after previous item
+                    // We append a small suffix to ensure it stays after the main event
+                    return { item, sortTime: lastTime + "_99", originalIndex: index };
+                }
+            });
+
+            itemsWithSortKey.sort((a, b) => {
+                if (a.sortTime < b.sortTime) return -1;
+                if (a.sortTime > b.sortTime) return 1;
+                return a.originalIndex - b.originalIndex; // Stable sort fallback
+            });
+
+            itineraryData[dayId].items = itemsWithSortKey.map(x => x.item);
         }
 
         // ================= WALLET =================
@@ -1146,62 +1220,6 @@
             el.innerHTML = `${d}天 ${h}時 ${m}分`;
         }
 
-        function exportCSV() {
-            let csv = '\uFEFFCategory,Description,Amount,Currency,Date\n';
-            Object.keys(expensesData).forEach(cat => {
-                expensesData[cat].forEach(item => {
-                    csv += `${cat},${item.desc},${item.amount},${item.currency},${item.date}\n`;
-                });
-            });
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = "nagoya_expenses.csv";
-            link.click();
-        }
-        
-        let itineraryNotes = JSON.parse(localStorage.getItem('nagoya_itinerary_notes')) || {};
-        function editNote(id) {
-            const note = prompt("筆記:", itineraryNotes[id] || "");
-            if(note !== null) {
-                itineraryNotes[id] = note;
-                localStorage.setItem('nagoya_itinerary_notes', JSON.stringify(itineraryNotes));
-                renderNotes();
-            }
-        }
-        function renderNotes() {
-            for(let id in itineraryNotes) {
-                const el = document.querySelector(`#${id} .note-area`);
-                if(el && itineraryNotes[id]) {
-                    el.textContent = "📝 " + itineraryNotes[id];
-                    el.classList.remove('hidden');
-                }
-            }
-        }
-        
-        function renderChecklist() {
-            let list = JSON.parse(localStorage.getItem('nagoya_checklist'));
-            if(!list || list.length === 0) { 
-                list = defaultChecklist; 
-                localStorage.setItem('nagoya_checklist', JSON.stringify(list)); 
-            }
-            const container = document.getElementById('checklist-container');
-            container.innerHTML = '';
-            list.forEach((item, index) => {
-                const div = document.createElement('div');
-                div.className = 'flex items-center gap-2 p-2 border-b border-dashed border-gray-200';
-                div.innerHTML = `<input type="checkbox" id="check-${index}" ${item.checked ? 'checked' : ''} class="w-5 h-5 accent-black"><label for="check-${index}" class="flex-1 ${item.checked ? 'line-through text-gray-400' : ''}">${item.text}</label><i class="fas fa-times text-gray-300 cursor-pointer" onclick="removeCheckItem(${index})"></i>`;
-                div.querySelector('input').addEventListener('change', (e) => { list[index].checked = e.target.checked; localStorage.setItem('nagoya_checklist', JSON.stringify(list)); renderChecklist(); });
-                container.appendChild(div);
-            });
-        }
-        function addCheckItem() { const input = document.getElementById('new-check-item'); if(input.value) { let list = JSON.parse(localStorage.getItem('nagoya_checklist')) || []; list.push({ text: input.value, checked: false }); localStorage.setItem('nagoya_checklist', JSON.stringify(list)); input.value = ''; renderChecklist(); } }
-        function removeCheckItem(index) { let list = JSON.parse(localStorage.getItem('nagoya_checklist')); list.splice(index, 1); localStorage.setItem('nagoya_checklist', JSON.stringify(list)); renderChecklist(); }
-
-        const memoArea = document.getElementById('memo-area');
-        memoArea.value = localStorage.getItem('nagoya_memo') || '';
-        memoArea.addEventListener('input', (e) => { localStorage.setItem('nagoya_memo', e.target.value); });
-        
         function parseMemoLinks(text) {
             const urlRegex = /(https?:\/\/[^\s]+)/g;
             const matches = text.match(urlRegex);
@@ -1242,6 +1260,41 @@
         }
 
         function findNearestHelp() { alert('定位功能啟動 (需 HTTPS)'); }
+
+        function renderChecklist() {
+            let list = JSON.parse(localStorage.getItem('nagoya_checklist'));
+            if(!list || list.length === 0) { 
+                list = defaultChecklist; 
+                localStorage.setItem('nagoya_checklist', JSON.stringify(list)); 
+            }
+            const container = document.getElementById('checklist-container');
+            container.innerHTML = '';
+            list.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center gap-2 p-2 border-b border-dashed border-gray-200';
+                div.innerHTML = `<input type="checkbox" id="check-${index}" ${item.checked ? 'checked' : ''} class="w-5 h-5 accent-black"><label for="check-${index}" class="flex-1 ${item.checked ? 'line-through text-gray-400' : ''}">${item.text}</label><i class="fas fa-times text-gray-300 cursor-pointer" onclick="removeCheckItem(${index})"></i>`;
+                div.querySelector('input').addEventListener('change', (e) => { list[index].checked = e.target.checked; localStorage.setItem('nagoya_checklist', JSON.stringify(list)); renderChecklist(); });
+                container.appendChild(div);
+            });
+        }
+
+        function addCheckItem() { 
+            const input = document.getElementById('new-check-item'); 
+            if(input.value) { 
+                let list = JSON.parse(localStorage.getItem('nagoya_checklist')) || []; 
+                list.push({ text: input.value, checked: false }); 
+                localStorage.setItem('nagoya_checklist', JSON.stringify(list)); 
+                input.value = ''; 
+                renderChecklist(); 
+            } 
+        }
+
+        function removeCheckItem(index) { 
+            let list = JSON.parse(localStorage.getItem('nagoya_checklist')); 
+            list.splice(index, 1); 
+            localStorage.setItem('nagoya_checklist', JSON.stringify(list)); 
+            renderChecklist(); 
+        }
 
     </script>
 </body>
